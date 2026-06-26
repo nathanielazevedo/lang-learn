@@ -11,7 +11,7 @@ function deckStats(deck, progress) {
   return { mastered, due, total: deck.cards.length }
 }
 
-export default function Dashboard({ decks, progress, stats, ratingCounts, onStudy, onQuiz, onType, onReview, onReset }) {
+export default function Dashboard({ decks, progress, stats, ratingCounts, onStudy, onQuiz, onType, onReview, onListen, onListenAll, onReset }) {
   const hasRatings = QUALITIES.some((g) => ratingCounts[g.q] > 0)
 
   return (
@@ -24,6 +24,9 @@ export default function Dashboard({ decks, progress, stats, ratingCounts, onStud
           <Stat label="Mastered" value={stats.mastered} tone="mastered" />
           <Stat label="Due now" value={stats.due} tone="due" />
         </div>
+        <button className="listen-all primary" onClick={onListenAll}>
+          🎧 Listen to all words — hands-free
+        </button>
       </section>
 
       {hasRatings && (
@@ -74,6 +77,7 @@ export default function Dashboard({ decks, progress, stats, ratingCounts, onStud
                   </button>
                   <button onClick={() => onQuiz(deck.id)}>Quiz</button>
                   <button onClick={() => onType(deck.id)}>Type</button>
+                  <button onClick={() => onListen(deck.id)}>🎧 Listen</button>
                 </div>
               </article>
             )

@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 
 const STORAGE_KEY = 'langlearn.settings.v1'
-const DEFAULTS = { direction: 'pinyin-first' } // or 'english-first'
+const DEFAULTS = {
+  direction: 'pinyin-first', // or 'english-first'
+  listenDelay: 4, // seconds to think between front and back audio in Listen mode
+}
 
 function load() {
   try {

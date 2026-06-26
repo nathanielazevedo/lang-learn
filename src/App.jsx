@@ -7,6 +7,7 @@ import Dashboard from './components/Dashboard.jsx'
 import StudyView from './components/StudyView.jsx'
 import QuizView from './components/QuizView.jsx'
 import TypingView from './components/TypingView.jsx'
+import ListenView from './components/ListenView.jsx'
 import Settings from './components/Settings.jsx'
 
 export default function App() {
@@ -73,6 +74,8 @@ export default function App() {
             onQuiz={(deckId) => setView({ name: 'quiz', deckId })}
             onType={(deckId) => setView({ name: 'typing', deckId })}
             onReview={(quality) => setView({ name: 'review', quality })}
+            onListen={(deckId) => setView({ name: 'listen', deckId })}
+            onListenAll={() => setView({ name: 'listen', all: true })}
             onReset={reset}
           />
         )}
@@ -116,6 +119,18 @@ export default function App() {
             deckId={view.deckId}
             grade={grade}
             direction={settings.direction}
+            onExit={() => setView({ name: 'dashboard' })}
+          />
+        )}
+
+        {view.name === 'listen' && (
+          <ListenView
+            cards={view.all ? allCards : getDeck(view.deckId).cards}
+            label={view.all ? '🎧 All words' : `${getDeck(view.deckId).flag} ${getDeck(view.deckId).name}`}
+            sessionKey={view.all ? 'listen-all' : `listen-${view.deckId}`}
+            direction={settings.direction}
+            delay={settings.listenDelay}
+            onDelayChange={(d) => update({ listenDelay: d })}
             onExit={() => setView({ name: 'dashboard' })}
           />
         )}
