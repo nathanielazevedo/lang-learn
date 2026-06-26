@@ -1,14 +1,22 @@
 // A lightweight SM-2 style spaced-repetition scheduler.
-// Each card's progress: { reps, interval (days), ease, due (timestamp), lapses }
+// Each card's progress: { reps, interval (days), ease, due (timestamp), lapses, lastQuality }
 const DAY = 24 * 60 * 60 * 1000
 
+// quality: 0 = "Again", 1 = "Hard", 2 = "Good", 3 = "Easy"
+export const QUALITIES = [
+  { q: 0, label: 'Again', cls: 'again' },
+  { q: 1, label: 'Hard', cls: 'hard' },
+  { q: 2, label: 'Good', cls: 'good' },
+  { q: 3, label: 'Easy', cls: 'easy' },
+]
+
 export function freshProgress() {
-  return { reps: 0, interval: 0, ease: 2.5, due: Date.now(), lapses: 0 }
+  return { reps: 0, interval: 0, ease: 2.5, due: Date.now(), lapses: 0, lastQuality: null }
 }
 
-// quality: 0 = "Again", 1 = "Hard", 2 = "Good", 3 = "Easy"
 export function review(progress, quality) {
   const p = progress ? { ...progress } : freshProgress()
+  p.lastQuality = quality // remember the most recent rating for filtered review
 
   if (quality === 0) {
     // Failed: reset the learning step, keep ease but penalize.

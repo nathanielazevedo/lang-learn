@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
-import { decks, allCards } from './data/decks.js'
+import { decks, allCards, getDeck } from './data/decks.js'
 import { useProgress } from './hooks/useProgress.js'
 import { useSettings } from './hooks/useSettings.js'
-import { isDue, masteryLevel } from './lib/srs.js'
+import { isDue, masteryLevel, QUALITIES } from './lib/srs.js'
 import Dashboard from './components/Dashboard.jsx'
 import StudyView from './components/StudyView.jsx'
 import QuizView from './components/QuizView.jsx'
@@ -26,6 +26,16 @@ export default function App() {
       if (isDue(p)) due++
     }
     return { total: allCards.length, mastered, learning, due }
+  }, [progress])
+
+  // How many cards were last rated Again / Hard / Good / Easy, for filtered review.
+  const ratingCounts = useMemo(() => {
+    const counts = { 0: 0, 1: 0, 2: 0, 3: 0 }
+    for (const card of allCards) {
+      const q = progress[card.id]?.lastQuality
+      if (q != null) counts[q] += 1
+    }
+    return counts
   }, [progress])
 
   return (
@@ -58,19 +68,36 @@ export default function App() {
             decks={decks}
             progress={progress}
             stats={stats}
+            ratingCounts={ratingCounts}
             onStudy={(deckId) => setView({ name: 'study', deckId })}
             onQuiz={(deckId) => setView({ name: 'quiz', deckId })}
             onType={(deckId) => setView({ name: 'typing', deckId })}
+            onReview={(quality) => setView({ name: 'review', quality })}
             onReset={reset}
           />
         )}
 
         {view.name === 'study' && (
           <StudyView
-            deckId={view.deckId}
+            cards={getDeck(view.deckId).cards}
+            label={`${getDeck(view.deckId).flag} ${getDeck(view.deckId).name}`}
+            sessionKey={view.deckId}
             progress={progress}
             grade={grade}
             direction={settings.direction}
+            onExit={() => setView({ name: 'dashboard' })}
+          />
+        )}
+
+        {view.name === 'review' && (
+          <StudyView
+            cards={allCards.filter((c) => progress[c.id]?.lastQuality === view.quality)}
+            label={`${QUALITIES[view.quality].label} cards`}
+            sessionKey={`review-${view.quality}`}
+            progress={progress}
+            grade={grade}
+            direction={settings.direction}
+            prioritizeDue={false}
             onExit={() => setView({ name: 'dashboard' })}
           />
         )}

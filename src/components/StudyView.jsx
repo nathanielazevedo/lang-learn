@@ -1,26 +1,30 @@
 import { useMemo, useState } from 'react'
-import { getDeck } from '../data/decks.js'
-import { isDue } from '../lib/srs.js'
+import { isDue, QUALITIES } from '../lib/srs.js'
 import Flashcard from './Flashcard.jsx'
 import SpeakButton from './SpeakButton.jsx'
 
-const GRADES = [
-  { q: 0, label: 'Again', cls: 'again' },
-  { q: 1, label: 'Hard', cls: 'hard' },
-  { q: 2, label: 'Good', cls: 'good' },
-  { q: 3, label: 'Easy', cls: 'easy' },
-]
-
-export default function StudyView({ deckId, progress, grade, onExit, direction }) {
-  const deck = getDeck(deckId)
-
-  // Build the initial queue once: due cards first, capped to a focused session.
+// `cards` is whatever the caller wants studied (a deck, or a filtered set).
+// `prioritizeDue` puts due cards first (good for normal deck review); turn it
+// off for filtered sessions where every card should be studied.
+export default function StudyView({
+  cards,
+  label,
+  sessionKey,
+  progress,
+  grade,
+  onExit,
+  direction,
+  prioritizeDue = true,
+}) {
   const initialQueue = useMemo(() => {
-    const due = deck.cards.filter((c) => isDue(progress[c.id]))
-    const pool = due.length ? due : deck.cards
-    return pool.slice(0, 20).map((c) => c.id)
+    let pool = cards
+    if (prioritizeDue) {
+      const due = cards.filter((c) => isDue(progress[c.id]))
+      pool = due.length ? due : cards
+    }
+    return pool.slice(0, 30).map((c) => c.id)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deckId])
+  }, [sessionKey])
 
   const [queue, setQueue] = useState(initialQueue)
   const [flipped, setFlipped] = useState(false)
@@ -37,7 +41,7 @@ export default function StudyView({ deckId, progress, grade, onExit, direction }
   }
 
   const currentId = queue[0]
-  const card = deck.cards.find((c) => c.id === currentId)
+  const card = cards.find((c) => c.id === currentId)
 
   function handleGrade(q) {
     grade(currentId, q)
@@ -54,7 +58,7 @@ export default function StudyView({ deckId, progress, grade, onExit, direction }
     <div className="session">
       <div className="session-top">
         <button className="ghost" onClick={onExit}>← Exit</button>
-        <span className="muted">{queue.length} left · {deck.flag} {deck.language}</span>
+        <span className="muted">{queue.length} left · {label}</span>
       </div>
 
       <Flashcard
@@ -75,7 +79,7 @@ export default function StudyView({ deckId, progress, grade, onExit, direction }
         </button>
       ) : (
         <div className="grade-row">
-          {GRADES.map((g) => (
+          {QUALITIES.map((g) => (
             <button key={g.q} className={`grade ${g.cls}`} onClick={() => handleGrade(g.q)}>
               {g.label}
             </button>

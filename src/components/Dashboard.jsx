@@ -1,4 +1,4 @@
-import { isDue, masteryLevel } from '../lib/srs.js'
+import { isDue, masteryLevel, QUALITIES } from '../lib/srs.js'
 
 function deckStats(deck, progress) {
   let mastered = 0
@@ -11,7 +11,9 @@ function deckStats(deck, progress) {
   return { mastered, due, total: deck.cards.length }
 }
 
-export default function Dashboard({ decks, progress, stats, onStudy, onQuiz, onType, onReset }) {
+export default function Dashboard({ decks, progress, stats, ratingCounts, onStudy, onQuiz, onType, onReview, onReset }) {
+  const hasRatings = QUALITIES.some((g) => ratingCounts[g.q] > 0)
+
   return (
     <div className="dashboard">
       <section className="hero">
@@ -23,6 +25,29 @@ export default function Dashboard({ decks, progress, stats, onStudy, onQuiz, onT
           <Stat label="Due now" value={stats.due} tone="due" />
         </div>
       </section>
+
+      {hasRatings && (
+        <section>
+          <h2>Study by rating</h2>
+          <p className="muted small">Drill the cards you last marked a certain way, across all decks.</p>
+          <div className="rating-row">
+            {QUALITIES.map((g) => {
+              const count = ratingCounts[g.q]
+              if (!count) return null
+              return (
+                <button
+                  key={g.q}
+                  className={`rating-chip ${g.cls}`}
+                  onClick={() => onReview(g.q)}
+                >
+                  <span className="rating-label">{g.label}</span>
+                  <span className="rating-count">{count}</span>
+                </button>
+              )
+            })}
+          </div>
+        </section>
+      )}
 
       <section>
         <h2>Decks</h2>
