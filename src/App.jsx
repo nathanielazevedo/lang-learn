@@ -8,6 +8,7 @@ import StudyView from './components/StudyView.jsx'
 import QuizView from './components/QuizView.jsx'
 import TypingView from './components/TypingView.jsx'
 import ListenView from './components/ListenView.jsx'
+import FallingView from './components/FallingView.jsx'
 import Settings from './components/Settings.jsx'
 
 export default function App() {
@@ -76,6 +77,7 @@ export default function App() {
             onReview={(quality) => setView({ name: 'review', quality })}
             onListen={(deckId) => setView({ name: 'listen', deckId })}
             onListenAll={() => setView({ name: 'listen', all: true })}
+            onFalling={() => setView({ name: 'falling' })}
             onReset={reset}
           />
         )}
@@ -131,6 +133,14 @@ export default function App() {
             direction={settings.direction}
             delay={settings.listenDelay}
             onDelayChange={(d) => update({ listenDelay: d })}
+            onExit={() => setView({ name: 'dashboard' })}
+          />
+        )}
+
+        {view.name === 'falling' && (
+          <FallingView
+            cards={allCards}
+            label="All words"
             onExit={() => setView({ name: 'dashboard' })}
           />
         )}
