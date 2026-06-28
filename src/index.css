@@ -311,6 +311,25 @@ section h2 { font-size: 1.2rem; margin-bottom: 14px; }
   font-size: 0.9rem;
 }
 
+/* Falling Words leaderboard */
+.leaderboard { width: 100%; max-width: 420px; margin: 0 auto; }
+.leaderboard h3 { font-size: 1rem; margin: 0 0 8px; }
+.lb-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--surface);
+  border: 1px solid #ffffff0d;
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.lb-table th, .lb-table td { padding: 9px 12px; text-align: right; }
+.lb-table th { color: var(--muted); font-size: 0.8rem; font-weight: 600; }
+.lb-table thead tr { border-bottom: 1px solid #ffffff14; }
+.lb-table tbody tr + tr { border-top: 1px solid #ffffff0a; }
+.lb-table td { font-weight: 700; font-variant-numeric: tabular-nums; }
+.lb-lvl { text-align: left !important; color: var(--accent-2); }
+.lb-name { color: var(--muted); font-weight: 600; font-size: 0.85em; }
+
 /* Falling level chooser */
 .level-choose { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 4px 0; }
 .level-pick {
@@ -339,6 +358,35 @@ section h2 { font-size: 1.2rem; margin-bottom: 14px; }
 }
 .audio-mode-toggle input { width: 20px; height: 20px; accent-color: var(--accent-2); flex-shrink: 0; }
 .fall-word.audio { font-size: 2rem; padding: 12px 22px; }
+
+/* New global high score entry */
+.record-entry {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(135deg, #2a2552, #1f3a33);
+  border: 1px solid var(--accent-2);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+.record-title { font-weight: 800; color: var(--accent-2); }
+.initials-row { display: flex; gap: 8px; }
+.name-input {
+  width: 180px;
+  font: inherit;
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-align: center;
+  padding: 10px;
+  border-radius: 10px;
+  border: 2px solid var(--accent);
+  background: var(--surface);
+  color: var(--text);
+  outline: none;
+}
+.name-input::placeholder { color: var(--muted); font-weight: 400; }
+.scope-label { font-weight: 700; margin: 0; color: var(--accent-2); }
 
 /* Game-over review list */
 .wrong-review { width: 100%; max-width: 460px; margin: 6px auto 0; text-align: left; }

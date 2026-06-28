@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { sfx } from '../lib/sfx.js'
 import { playWord } from '../lib/audio.js'
+import { getAllHighScores, submitHighScore } from '../lib/highscore.js'
 import SpeakButton from './SpeakButton.jsx'
 
 function shuffle(arr) {
@@ -44,6 +45,12 @@ export default function FallingView({ levels, onExit, onStudyWrong }) {
   const [running, setRunning] = useState(false)
   const [gameOver, setGameOver] = useState(false)
   const [best, setBest] = useState(() => Number(localStorage.getItem('langlearn.falling.best') || 0))
+  const [allScores, setAllScores] = useState(null) // [{ scope, score, name }] | null
+  const [playedBest, setPlayedBest] = useState(null) // best for the game just played
+  const [playedScope, setPlayedScope] = useState(null) // { mode, level } of the played game
+  const [name, setName] = useState(() => localStorage.getItem('langlearn.falling.name') || '')
+  const [submitting, setSubmitting] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
   const [round, setRound] = useState(null)
   const [pos, setPos] = useState(0)
   const [feedback, setFeedback] = useState(null) // 'correct' | 'wrong'
@@ -64,6 +71,37 @@ export default function FallingView({ levels, onExit, onStudyWrong }) {
   const flashTimer = useRef(null)
 
   useEffect(() => { sfx.setEnabled(!muted) }, [muted])
+
+  const currentMode = audioMode ? 'audio' : 'word'
+
+  // Look up the record for a mode+level from the loaded leaderboard.
+  const scoreFor = (mode, level) =>
+    allScores?.find((r) => r.scope === `${mode}:L${level}`) || null
+  // Best for the currently selected scope (null if scores couldn't load).
+  const globalBest = allScores ? scoreFor(currentMode, selectedLevel) || { score: 0, name: '' } : null
+
+  const loadScores = useCallback(() => {
+    getAllHighScores().then(setAllScores)
+  }, [])
+
+  // Refresh the leaderboard whenever we're on the start/end screen.
+  useEffect(() => {
+    if (!running) loadScores()
+  }, [running, loadScores])
+
+  async function submitScore() {
+    if (!playedScope) return
+    setSubmitting(true)
+    const clean = name.replace(/[^\p{L}\p{N} ]/gu, '').trim().slice(0, 12)
+    localStorage.setItem('langlearn.falling.name', clean)
+    const hs = await submitHighScore(playedScope.mode, playedScope.level, score, clean)
+    if (hs) {
+      setPlayedBest(hs)
+      loadScores() // refresh the leaderboard
+    }
+    setSubmitted(true)
+    setSubmitting(false)
+  }
 
   // Cumulative pool for a level: every word from level 1 up to it.
   function poolForLevel(level) {
@@ -128,6 +166,9 @@ export default function FallingView({ levels, onExit, onStudyWrong }) {
   function start() {
     poolRef.current = poolForLevel(selectedLevel)
     audioModeRef.current = audioMode
+    // Snapshot which scope this game counts toward (the chooser can change after).
+    setPlayedScope({ mode: audioMode ? 'audio' : 'word', level: selectedLevel })
+    setPlayedBest(globalBest)
     scoreRef.current = 0
     livesRef.current = START_LIVES
     streakRef.current = 0
@@ -136,6 +177,7 @@ export default function FallingView({ levels, onExit, onStudyWrong }) {
     setScore(0)
     setLives(START_LIVES)
     setPops([])
+    setSubmitted(false)
     setGameOver(false)
     setRunning(true)
     sfx.start()
@@ -191,7 +233,35 @@ export default function FallingView({ levels, onExit, onStudyWrong }) {
         {gameOver ? (
           <>
             <div className="score-ring">{score}</div>
-            <p className="muted">{score >= best && score > 0 ? '🏆 New best!' : `Best: ${best}`}</p>
+            {playedScope && (
+              <p className="scope-label">
+                Level {playedScope.level} · {playedScope.mode === 'audio' ? '🔊 Audio mode' : 'Word mode'}
+              </p>
+            )}
+            <p className="muted">
+              Your best: {Math.max(best, score)}
+              {playedBest && <> · 🌍 Global: {playedBest.score}{playedBest.name ? ` (${playedBest.name})` : ''}</>}
+            </p>
+
+            {playedBest && score > playedBest.score && !submitted && (
+              <div className="record-entry">
+                <span className="record-title">🏆 New global high score!</span>
+                <div className="initials-row">
+                  <input
+                    className="name-input"
+                    value={name}
+                    maxLength={12}
+                    placeholder="name (optional)"
+                    onChange={(e) => setName(e.target.value)}
+                    aria-label="Your name (optional)"
+                  />
+                  <button className="primary" disabled={submitting} onClick={submitScore}>
+                    {submitting ? '…' : 'Save'}
+                  </button>
+                </div>
+              </div>
+            )}
+            {submitted && <p className="muted">Saved to the global leaderboard! 🌍</p>}
           </>
         ) : (
           <p className="muted">
@@ -221,6 +291,31 @@ export default function FallingView({ levels, onExit, onStudyWrong }) {
           />
           <span>🔊 Audio mode — word hidden, hear it once</span>
         </label>
+
+        {!gameOver && allScores && allScores.length > 0 && (
+          <div className="leaderboard">
+            <h3>🏆 High scores</h3>
+            <table className="lb-table">
+              <thead>
+                <tr><th></th><th>Word</th><th>🔊 Audio</th></tr>
+              </thead>
+              <tbody>
+                {levels.map((l) => {
+                  const w = scoreFor('word', l.level)
+                  const a = scoreFor('audio', l.level)
+                  const cell = (r) => (r ? <>{r.score}{r.name ? <span className="lb-name"> {r.name}</span> : ''}</> : '—')
+                  return (
+                    <tr key={l.id}>
+                      <td className="lb-lvl">Lvl {l.level}</td>
+                      <td>{cell(w)}</td>
+                      <td>{cell(a)}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
 
         {gameOver && wrongCards.length > 0 && (
           <div className="wrong-review">
