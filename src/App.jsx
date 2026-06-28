@@ -15,6 +15,7 @@ export default function App() {
   const { progress, grade, reset } = useProgress()
   const { settings, update } = useSettings()
   const [view, setView] = useState({ name: 'dashboard' })
+  const immersive = view.name === 'falling' // full-screen, no footer/scroll
 
   const stats = useMemo(() => {
     let mastered = 0
@@ -64,7 +65,7 @@ export default function App() {
         </nav>
       </header>
 
-      <main className="container">
+      <main className={`container${immersive ? ' immersive' : ''}`}>
         {view.name === 'dashboard' && (
           <Dashboard
             decks={decks}
@@ -154,9 +155,11 @@ export default function App() {
         )}
       </main>
 
-      <footer className="footer">
-        Built with React · progress saved locally in your browser
-      </footer>
+      {!immersive && (
+        <footer className="footer">
+          Built with React · progress saved locally in your browser
+        </footer>
+      )}
     </div>
   )
 }

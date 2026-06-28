@@ -56,7 +56,7 @@ button.primary { background: var(--accent); }
 button.wide { width: 100%; padding: 14px; font-size: 1.05rem; }
 button.ghost { background: transparent; padding: 6px 10px; }
 
-.app { display: flex; flex-direction: column; min-height: 100vh; }
+.app { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
 
 .topbar {
   display: flex;
@@ -95,6 +95,22 @@ button.ghost { background: transparent; padding: 6px 10px; }
   padding: 24px max(16px, env(safe-area-inset-left)) 64px max(16px, env(safe-area-inset-right));
   flex: 1;
 }
+
+/* Immersive views (the game) fill the screen with no footer or page scroll. */
+.container.immersive {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding-top: 10px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom));
+  overflow: hidden;
+}
+.container.immersive .session {
+  flex: 1;
+  min-height: 0;
+  gap: 10px;
+}
+.container.immersive .session.done { justify-content: center; }
 
 .footer {
   text-align: center;
@@ -149,20 +165,35 @@ section h2 { font-size: 1.2rem; margin-bottom: 14px; }
 
 /* Falling Words game */
 .intro-actions { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 320px; }
-.hud { display: flex; align-items: center; gap: 14px; font-weight: 700; }
+.hud { display: flex; align-items: center; gap: 12px; font-weight: 700; }
 .hud-score { color: var(--due); }
 .hud-lives { letter-spacing: 1px; }
+.mute-btn { min-height: 0; padding: 4px 6px; font-size: 1rem; }
+
 .fall-field {
   position: relative;
-  height: clamp(300px, 52vh, 520px);
+  flex: 1;
+  min-height: 0;
   background: radial-gradient(120% 80% at 50% -10%, #241b3e, var(--surface) 70%);
   border: 1px solid #ffffff12;
   border-radius: var(--radius);
   overflow: hidden;
   transition: background 0.15s ease, box-shadow 0.15s ease;
 }
-.fall-field.correct { box-shadow: inset 0 0 0 2px var(--accent-2); }
-.fall-field.wrong { box-shadow: inset 0 0 0 2px var(--danger); background: radial-gradient(120% 80% at 50% -10%, #3a2030, var(--surface) 70%); }
+.fall-field.correct {
+  box-shadow: inset 0 0 0 2px var(--accent-2), inset 0 0 40px #00d2a833;
+}
+.fall-field.wrong {
+  box-shadow: inset 0 0 0 2px var(--danger), inset 0 0 40px #ff5c7a33;
+  background: radial-gradient(120% 80% at 50% -10%, #3a2030, var(--surface) 70%);
+  animation: shake 0.24s ease;
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-7px); }
+  75% { transform: translateX(7px); }
+}
+
 .fall-word {
   position: absolute;
   left: 50%;
@@ -175,7 +206,41 @@ section h2 { font-size: 1.2rem; margin-bottom: 14px; }
   background: var(--surface-2);
   border: 1px solid #ffffff1a;
   box-shadow: 0 6px 18px #0006;
+  transition: color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
+.fall-word.warn {
+  color: #ffd27d;
+  border-color: #ffb02055;
+  box-shadow: 0 6px 18px #0006, 0 0 18px #ffb02044;
+}
+.fall-word.danger {
+  color: #ff8aa3;
+  border-color: var(--danger);
+  box-shadow: 0 6px 18px #0006, 0 0 22px #ff5c7a88;
+  animation: danger-pulse 0.5s ease-in-out infinite;
+}
+@keyframes danger-pulse {
+  0%, 100% { transform: translateX(-50%) scale(1); }
+  50% { transform: translateX(-50%) scale(1.08); }
+}
+
+.point-pop {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-weight: 800;
+  font-size: 1.4rem;
+  pointer-events: none;
+  animation: point-pop 0.75s ease-out forwards;
+  text-shadow: 0 2px 8px #000a;
+}
+.point-pop.good { color: var(--accent-2); }
+@keyframes point-pop {
+  0% { opacity: 0; transform: translate(-50%, 0) scale(0.7); }
+  25% { opacity: 1; transform: translate(-50%, -10px) scale(1.15); }
+  100% { opacity: 0; transform: translate(-50%, -60px) scale(1); }
+}
+
 .fall-line {
   position: absolute;
   left: 0; right: 0; bottom: 38px;
@@ -189,7 +254,7 @@ section h2 { font-size: 1.2rem; margin-bottom: 14px; }
   background: var(--surface);
   border: 1px solid #ffffff14;
 }
-.fall-option:active { background: var(--accent); }
+.fall-option:active { background: var(--accent); transform: scale(0.97); }
 
 /* Listen mode player */
 .listen-card {
