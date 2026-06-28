@@ -31,7 +31,7 @@ function LeaderTable({ levels, selectedLevel, cell }) {
   return (
     <table className="lb-table">
       <thead>
-        <tr><th></th><th>Word</th><th>🔊 Audio</th></tr>
+        <tr><th></th><th>Word</th><th>Audio</th></tr>
       </thead>
       <tbody>
         {levels.map((l) => (
@@ -82,6 +82,7 @@ export default function FallingView({ levels, onExit, onStudyWrong }) {
   const [feedback, setFeedback] = useState(null) // 'correct' | 'wrong'
   const [pops, setPops] = useState([])
   const [muted, setMuted] = useState(() => localStorage.getItem(MUTE_KEY) === '1')
+  const [showScores, setShowScores] = useState(false)
   const [wrongCards, setWrongCards] = useState([])
   // Audio mode: the word is hidden and you identify it by hearing it once.
   const [audioMode, setAudioMode] = useState(() => localStorage.getItem(AUDIO_KEY) === '1')
@@ -265,24 +266,24 @@ export default function FallingView({ levels, onExit, onStudyWrong }) {
   if (!running) {
     return (
       <div className="session done">
-        <h2>{gameOver ? 'Game over' : '🕹️ Falling Words'}</h2>
+        <h2>{gameOver ? 'Game over' : 'Falling Words'}</h2>
 
         {gameOver ? (
           <>
             <div className="score-ring">{score}</div>
             {playedScope && (
               <p className="scope-label">
-                Level {playedScope.level} · {playedScope.mode === 'audio' ? '🔊 Audio mode' : 'Word mode'}
+                Level {playedScope.level} · {playedScope.mode === 'audio' ? 'Audio mode' : 'Word mode'}
               </p>
             )}
             <p className="muted">
               Your best: {playedScope ? Math.max(myScoreFor(playedScope.mode, playedScope.level), score) : score}
-              {playedBest && <> · 🌍 Global: {playedBest.score}{playedBest.name ? ` (${playedBest.name})` : ''}</>}
+              {playedBest && <> · Global: {playedBest.score}{playedBest.name ? ` (${playedBest.name})` : ''}</>}
             </p>
 
             {playedBest && score > playedBest.score && !submitted && (
               <div className="record-entry">
-                <span className="record-title">🏆 New global high score!</span>
+                <span className="record-title">New global high score!</span>
                 <div className="initials-row">
                   <input
                     className="name-input"
@@ -298,7 +299,7 @@ export default function FallingView({ levels, onExit, onStudyWrong }) {
                 </div>
               </div>
             )}
-            {submitted && <p className="muted">Saved to the global leaderboard! 🌍</p>}
+            {submitted && <p className="muted">Saved to the global leaderboard!</p>}
           </>
         ) : (
           <p className="muted">
@@ -331,7 +332,7 @@ export default function FallingView({ levels, onExit, onStudyWrong }) {
                 Word
               </button>
               <button className={audioMode ? 'active' : ''} onClick={() => toggleAudioMode(true)}>
-                🔊 Audio
+                Audio
               </button>
             </div>
             <span className="setup-hint">
@@ -341,26 +342,43 @@ export default function FallingView({ levels, onExit, onStudyWrong }) {
         </div>
 
         {!gameOver && (
-          <div className="leaderboards">
-            <div className="leaderboard">
-              <h3>👤 My high scores</h3>
-              <LeaderTable
-                levels={levels}
-                selectedLevel={selectedLevel}
-                cell={(mode, level) => myScoreFor(mode, level) || '—'}
-              />
-            </div>
-            {allScores && (
-              <div className="leaderboard">
-                <h3>🌍 Global high scores</h3>
-                <LeaderTable
-                  levels={levels}
-                  selectedLevel={selectedLevel}
-                  cell={(mode, level) => {
-                    const r = scoreFor(mode, level)
-                    return r ? <>{r.score}{r.name ? <span className="lb-name"> {r.name}</span> : ''}</> : '—'
-                  }}
-                />
+          <div className="scores">
+            <p className="best-line">
+              <span>Your best <b>{myScoreFor(currentMode, selectedLevel) || 0}</b></span>
+              {globalBest && (
+                <span>Global <b>{globalBest.score}</b>{globalBest.name ? ` (${globalBest.name})` : ''}</span>
+              )}
+            </p>
+            <button
+              className="ghost scores-toggle"
+              onClick={() => setShowScores((s) => !s)}
+              aria-expanded={showScores}
+            >
+              {showScores ? '▾' : '▸'} High scores
+            </button>
+            {showScores && (
+              <div className="leaderboards">
+                <div className="leaderboard">
+                  <h3>My high scores</h3>
+                  <LeaderTable
+                    levels={levels}
+                    selectedLevel={selectedLevel}
+                    cell={(mode, level) => myScoreFor(mode, level) || '—'}
+                  />
+                </div>
+                {allScores && (
+                  <div className="leaderboard">
+                    <h3>Global high scores</h3>
+                    <LeaderTable
+                      levels={levels}
+                      selectedLevel={selectedLevel}
+                      cell={(mode, level) => {
+                        const r = scoreFor(mode, level)
+                        return r ? <>{r.score}{r.name ? <span className="lb-name"> {r.name}</span> : ''}</> : '—'
+                      }}
+                    />
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -387,7 +405,7 @@ export default function FallingView({ levels, onExit, onStudyWrong }) {
           </button>
           {gameOver && wrongCards.length > 0 && onStudyWrong && (
             <button className="wide" onClick={() => onStudyWrong(wrongCards)}>
-              📚 Study these words
+              Study these words
             </button>
           )}
           <button className="wide" onClick={onExit}>Back to dashboard</button>

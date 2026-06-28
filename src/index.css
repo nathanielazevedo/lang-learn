@@ -125,6 +125,7 @@ button.ghost { background: transparent; padding: 6px 10px; }
 .container.immersive .session.done p { margin: 0; }
 /* Keep the start/end screen blocks aligned to one consistent column. */
 .game-setup,
+.scores,
 .leaderboards,
 .intro-actions,
 .wrong-review,
@@ -134,7 +135,11 @@ button.ghost { background: transparent; padding: 6px 10px; }
   margin-left: auto;
   margin-right: auto;
 }
-.leaderboards { display: flex; flex-direction: column; gap: 14px; }
+.scores { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.best-line { display: flex; gap: 16px; color: var(--muted); font-size: 0.9rem; }
+.best-line b { color: var(--text); font-variant-numeric: tabular-nums; }
+.scores-toggle { font-size: 0.82rem; color: var(--muted); padding: 4px 8px; min-height: 0; }
+.leaderboards { display: flex; flex-direction: column; gap: 14px; margin-top: 4px; }
 .container.immersive .session-top,
 .container.immersive .fall-options { padding-left: 12px; padding-right: 12px; }
 

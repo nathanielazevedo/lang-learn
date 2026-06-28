@@ -62,6 +62,7 @@ export default function StudyView({
       </div>
 
       <Flashcard
+        key={currentId}
         card={card}
         flipped={flipped}
         direction={direction}
