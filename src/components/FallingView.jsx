@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { sfx } from '../lib/sfx.js'
+import SpeakButton from './SpeakButton.jsx'
 
 function shuffle(arr) {
   const a = [...arr]
@@ -28,7 +29,7 @@ const MUTE_KEY = 'langlearn.falling.muted'
 
 // Arcade mode: pinyin words fall from the top; tap the matching English before
 // they hit the bottom. Wrong tap or a missed word costs a life.
-export default function FallingView({ cards, onExit }) {
+export default function FallingView({ cards, onExit, onStudyWrong }) {
   const [score, setScore] = useState(0)
   const [lives, setLives] = useState(START_LIVES)
   const [running, setRunning] = useState(false)
@@ -39,11 +40,13 @@ export default function FallingView({ cards, onExit }) {
   const [feedback, setFeedback] = useState(null) // 'correct' | 'wrong'
   const [pops, setPops] = useState([]) // floating "+N" labels
   const [muted, setMuted] = useState(() => localStorage.getItem(MUTE_KEY) === '1')
+  const [wrongCards, setWrongCards] = useState([]) // words missed this game, for review
 
   const posRef = useRef(0)
   const scoreRef = useRef(0)
   const livesRef = useRef(START_LIVES)
   const streakRef = useRef(0) // internal only: rises the correct-sound pitch
+  const wrongRef = useRef([]) // cards missed this game
   const popId = useRef(0)
   const flashTimer = useRef(null)
 
@@ -71,6 +74,9 @@ export default function FallingView({ cards, onExit }) {
     setRunning(false)
     setGameOver(true)
     setRound(null)
+    // De-duplicate missed words (the same word can fall more than once).
+    const seen = new Set()
+    setWrongCards(wrongRef.current.filter((c) => !seen.has(c.id) && seen.add(c.id)))
     sfx.gameOver()
     setBest((b) => {
       const nb = Math.max(b, scoreRef.current)
@@ -82,6 +88,7 @@ export default function FallingView({ cards, onExit }) {
   function loseLife() {
     flash('wrong')
     sfx.wrong()
+    if (round?.card) wrongRef.current.push(round.card)
     streakRef.current = 0
     livesRef.current -= 1
     setLives(livesRef.current)
@@ -93,6 +100,8 @@ export default function FallingView({ cards, onExit }) {
     scoreRef.current = 0
     livesRef.current = START_LIVES
     streakRef.current = 0
+    wrongRef.current = []
+    setWrongCards([])
     setScore(0)
     setLives(START_LIVES)
     setPops([])
@@ -151,6 +160,21 @@ export default function FallingView({ cards, onExit }) {
           <>
             <div className="score-ring">{score}</div>
             <p className="muted">{score >= best && score > 0 ? '🏆 New best!' : `Best: ${best}`}</p>
+
+            {wrongCards.length > 0 && (
+              <div className="wrong-review">
+                <h3>Words to review ({wrongCards.length})</h3>
+                <div className="wrong-list">
+                  {wrongCards.map((c) => (
+                    <div className="wrong-item" key={c.id}>
+                      <span className="w-term">{c.term}</span>
+                      <span className="w-trans">{c.translation}</span>
+                      <SpeakButton text={c.hanzi || c.term} label={c.term} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </>
         ) : (
           <p className="muted">
@@ -162,6 +186,11 @@ export default function FallingView({ cards, onExit }) {
           <button className="primary wide" onClick={start}>
             {gameOver ? '↻ Play again' : '▶ Start'}
           </button>
+          {gameOver && wrongCards.length > 0 && onStudyWrong && (
+            <button className="wide" onClick={() => onStudyWrong(wrongCards)}>
+              📚 Study these words
+            </button>
+          )}
           <button className="wide" onClick={onExit}>Back to dashboard</button>
         </div>
       </div>

@@ -141,7 +141,20 @@ export default function App() {
         {view.name === 'falling' && (
           <FallingView
             cards={allCards}
-            label="All words"
+            onExit={() => setView({ name: 'dashboard' })}
+            onStudyWrong={(cards) => setView({ name: 'studywrong', cards })}
+          />
+        )}
+
+        {view.name === 'studywrong' && (
+          <StudyView
+            cards={view.cards}
+            label="🕹️ Missed words"
+            sessionKey="studywrong"
+            progress={progress}
+            grade={grade}
+            direction={settings.direction}
+            prioritizeDue={false}
             onExit={() => setView({ name: 'dashboard' })}
           />
         )}
