@@ -1,75 +1,70 @@
-import { isDue, masteryLevel, QUALITIES } from '../lib/srs.js'
-
 function levelStats(level, progress) {
-  let mastered = 0
-  let due = 0
+  let mastered = 0;
   for (const card of level.cards) {
-    const p = progress[card.id]
-    if (masteryLevel(p) === 'mastered') mastered++
-    if (isDue(p)) due++
+    if ((progress[card.id]?.lastQuality ?? -1) >= 2) mastered++;
   }
-  return { mastered, due, total: level.cards.length }
+  return { mastered, total: level.cards.length };
 }
 
-export default function Dashboard({ levels, progress, stats, ratingCounts, onStudy, onQuiz, onType, onReview, onListen, onListenAll, onFalling, onList, onReset }) {
-  const hasRatings = QUALITIES.some((g) => ratingCounts[g.q] > 0)
-
+export default function Dashboard({
+  levels,
+  progress,
+  stats,
+  onStudy,
+  onQuiz,
+  onType,
+  onStudyBucket,
+  onListen,
+  onFalling,
+  onList,
+}) {
   return (
     <div className="dashboard">
       <section className="hero">
         <h1>Your progress</h1>
+        <p className="muted small">Tap a group to study those words.</p>
         <div className="stat-grid">
-          <Stat label="Words" value={stats.total} />
-          <Stat label="Learning" value={stats.learning} tone="learning" />
-          <Stat label="Mastered" value={stats.mastered} tone="mastered" />
-          <Stat label="Due now" value={stats.due} tone="due" />
+          <Stat
+            label="Mastered"
+            value={stats.mastered}
+            tone="mastered"
+            onClick={
+              stats.mastered ? () => onStudyBucket("mastered") : undefined
+            }
+          />
+          <Stat
+            label="Forgot"
+            value={stats.forgot}
+            tone="forgot"
+            onClick={stats.forgot ? () => onStudyBucket("forgot") : undefined}
+          />
+          <Stat
+            label="Unseen"
+            value={stats.unseen}
+            tone="unseen"
+            onClick={stats.unseen ? () => onStudyBucket("unseen") : undefined}
+          />
         </div>
         <div className="hero-modes">
-          <button className="mode-btn listen-mode" onClick={onListenAll}>
-            🎧 Listen — hands-free
-          </button>
           <button className="mode-btn game-mode" onClick={onFalling}>
-            🕹️ Falling Words — game
+            Falling Words
           </button>
         </div>
       </section>
-
-      {hasRatings && (
-        <section>
-          <h2>Study by rating</h2>
-          <p className="muted small">Drill the cards you last marked a certain way, across all levels.</p>
-          <div className="rating-row">
-            {QUALITIES.map((g) => {
-              const count = ratingCounts[g.q]
-              if (!count) return null
-              return (
-                <button
-                  key={g.q}
-                  className={`rating-chip ${g.cls}`}
-                  onClick={() => onReview(g.q)}
-                >
-                  <span className="rating-label">{g.label}</span>
-                  <span className="rating-count">{count}</span>
-                </button>
-              )
-            })}
-          </div>
-        </section>
-      )}
 
       <section>
         <h2>Levels</h2>
         <div className="deck-grid">
           {levels.map((level) => {
-            const s = levelStats(level, progress)
-            const pct = Math.round((s.mastered / s.total) * 100)
+            const s = levelStats(level, progress);
+            const pct = Math.round((s.mastered / s.total) * 100);
             return (
               <article className="deck-card" key={level.id}>
                 <div className="deck-head">
                   <span className="level-badge">{level.level}</span>
                   <div>
                     <h3>{level.name}</h3>
-                    <p className="muted">{level.subtitle} · {s.due} due</p>
+                    <p className="muted">{level.subtitle}</p>
                   </div>
                 </div>
                 <div className="progress-bar" aria-label={`${pct}% mastered`}>
@@ -82,31 +77,31 @@ export default function Dashboard({ levels, progress, stats, ratingCounts, onStu
                   </button>
                   <button onClick={() => onQuiz(level.id)}>Quiz</button>
                   <button onClick={() => onType(level.id)}>Type</button>
-                  <button onClick={() => onListen(level.id)}>🎧 Listen</button>
-                  <button onClick={() => onList(level.id)}>📋 List</button>
+                  <button onClick={() => onListen(level.id)}>Listen</button>
+                  <button onClick={() => onList(level.id)}>List</button>
                 </div>
               </article>
-            )
+            );
           })}
         </div>
       </section>
-
-      <section className="danger-zone">
-        <button className="link-danger" onClick={() => {
-          if (confirm('Reset all progress? This cannot be undone.')) onReset()
-        }}>
-          Reset all progress
-        </button>
-      </section>
     </div>
-  )
+  );
 }
 
-function Stat({ label, value, tone }) {
-  return (
-    <div className={`stat ${tone || ''}`}>
+function Stat({ label, value, tone, onClick }) {
+  const className = `stat ${tone || ""} ${onClick ? "clickable" : ""}`;
+  const inner = (
+    <>
       <div className="stat-value">{value}</div>
       <div className="stat-label">{label}</div>
-    </div>
-  )
+    </>
+  );
+  return onClick ? (
+    <button className={className} onClick={onClick}>
+      {inner}
+    </button>
+  ) : (
+    <div className={className}>{inner}</div>
+  );
 }

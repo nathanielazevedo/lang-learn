@@ -1,4 +1,4 @@
-export default function Settings({ settings, update, onExit }) {
+export default function Settings({ settings, update, onReset, onExit }) {
   const dir = settings.direction
 
   return (
@@ -28,6 +28,19 @@ export default function Settings({ settings, update, onExit }) {
             <span className="muted small">See English → recall the pīnyīn</span>
           </button>
         </div>
+      </section>
+
+      <section className="setting-block">
+        <h2>Reset</h2>
+        <p className="muted">Clear all your study progress on this device. This cannot be undone.</p>
+        <button
+          className="link-danger"
+          onClick={() => {
+            if (confirm('Reset all progress? This cannot be undone.')) onReset()
+          }}
+        >
+          Reset all progress
+        </button>
       </section>
     </div>
   )

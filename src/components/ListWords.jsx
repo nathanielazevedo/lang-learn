@@ -1,14 +1,7 @@
 import { useState } from 'react'
-import { masteryLevel } from '../lib/srs.js'
+import { bucketOf, BUCKET_LABELS } from '../lib/srs.js'
 import { regenerateAudio, playFresh } from '../lib/audio.js'
 import SpeakButton from './SpeakButton.jsx'
-
-const MASTERY_TITLE = {
-  new: 'Not studied yet',
-  seen: 'Seen once',
-  learning: 'Learning',
-  mastered: 'Mastered',
-}
 
 const canRegen = import.meta.env.DEV // dev-server only
 
@@ -41,10 +34,10 @@ export default function ListWords({ cards, label, progress, onExit }) {
 
       <div className="word-list">
         {cards.map((card) => {
-          const level = masteryLevel(progress[card.id])
+          const b = bucketOf(progress[card.id])
           return (
             <div className="word-row" key={card.id}>
-              <span className={`mastery-dot ${level}`} title={MASTERY_TITLE[level]} />
+              <span className={`mastery-dot ${b}`} title={BUCKET_LABELS[b]} />
               <span className="word-term">{card.term}</span>
               <span className="word-trans">{card.translation}</span>
               {canRegen && (

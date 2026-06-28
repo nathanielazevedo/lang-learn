@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { isDue, QUALITIES } from '../lib/srs.js'
+import { isDue } from '../lib/srs.js'
 import Flashcard from './Flashcard.jsx'
 import SpeakButton from './SpeakButton.jsx'
 
@@ -79,11 +79,12 @@ export default function StudyView({
         </button>
       ) : (
         <div className="grade-row">
-          {QUALITIES.map((g) => (
-            <button key={g.q} className={`grade ${g.cls}`} onClick={() => handleGrade(g.q)}>
-              {g.label}
-            </button>
-          ))}
+          <button className="grade again" onClick={() => handleGrade(0)}>
+            Forgot
+          </button>
+          <button className="grade good" onClick={() => handleGrade(2)}>
+            Knew it
+          </button>
         </div>
       )}
     </div>

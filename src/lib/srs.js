@@ -2,13 +2,14 @@
 // Each card's progress: { reps, interval (days), ease, due (timestamp), lapses, lastQuality }
 const DAY = 24 * 60 * 60 * 1000
 
-// quality: 0 = "Again", 1 = "Hard", 2 = "Good", 3 = "Easy"
-export const QUALITIES = [
-  { q: 0, label: 'Again', cls: 'again' },
-  { q: 1, label: 'Hard', cls: 'hard' },
-  { q: 2, label: 'Good', cls: 'good' },
-  { q: 3, label: 'Easy', cls: 'easy' },
-]
+// Flashcard grades feed the scheduler: 0 = "Forgot", 2 = "Knew it".
+
+// Which progress bucket a card is in, based on your most recent result.
+export function bucketOf(progress) {
+  if (!progress || progress.lastQuality == null) return 'unseen'
+  return progress.lastQuality >= 2 ? 'mastered' : 'forgot'
+}
+export const BUCKET_LABELS = { mastered: 'Mastered', forgot: 'Forgot', unseen: 'Unseen' }
 
 export function freshProgress() {
   return { reps: 0, interval: 0, ease: 2.5, due: Date.now(), lapses: 0, lastQuality: null }
@@ -49,11 +50,4 @@ export function review(progress, quality) {
 export function isDue(progress, now = Date.now()) {
   if (!progress) return true
   return progress.due <= now
-}
-
-export function masteryLevel(progress) {
-  if (!progress || progress.reps === 0) return 'new'
-  if (progress.interval >= 21) return 'mastered'
-  if (progress.reps >= 2) return 'learning'
-  return 'seen'
 }

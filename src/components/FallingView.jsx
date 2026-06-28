@@ -26,6 +26,26 @@ function fallDuration(score) {
   return Math.max(2.6, 7 - score * 0.1)
 }
 
+// A levels × (Word | Audio) scores table. `cell(mode, level)` returns its content.
+function LeaderTable({ levels, selectedLevel, cell }) {
+  return (
+    <table className="lb-table">
+      <thead>
+        <tr><th></th><th>Word</th><th>🔊 Audio</th></tr>
+      </thead>
+      <tbody>
+        {levels.map((l) => (
+          <tr key={l.id} className={l.level === selectedLevel ? 'lb-current' : ''}>
+            <td className="lb-lvl">Lvl {l.level}</td>
+            <td>{cell('word', l.level)}</td>
+            <td>{cell('audio', l.level)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+}
+
 const START_LIVES = 3
 const MUTE_KEY = 'langlearn.falling.muted'
 const LEVEL_KEY = 'langlearn.falling.level'
@@ -44,7 +64,13 @@ export default function FallingView({ levels, onExit, onStudyWrong }) {
   const [lives, setLives] = useState(START_LIVES)
   const [running, setRunning] = useState(false)
   const [gameOver, setGameOver] = useState(false)
-  const [best, setBest] = useState(() => Number(localStorage.getItem('langlearn.falling.best') || 0))
+  const [myScores, setMyScores] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('langlearn.falling.scores') || '{}')
+    } catch {
+      return {}
+    }
+  })
   const [allScores, setAllScores] = useState(null) // [{ scope, score, name }] | null
   const [playedBest, setPlayedBest] = useState(null) // best for the game just played
   const [playedScope, setPlayedScope] = useState(null) // { mode, level } of the played game
@@ -67,6 +93,7 @@ export default function FallingView({ levels, onExit, onStudyWrong }) {
   const wrongRef = useRef([])
   const poolRef = useRef([])
   const audioModeRef = useRef(false)
+  const playedScopeRef = useRef(null)
   const popId = useRef(0)
   const flashTimer = useRef(null)
 
@@ -74,9 +101,11 @@ export default function FallingView({ levels, onExit, onStudyWrong }) {
 
   const currentMode = audioMode ? 'audio' : 'word'
 
-  // Look up the record for a mode+level from the loaded leaderboard.
+  // Look up the global record for a mode+level from the loaded leaderboard.
   const scoreFor = (mode, level) =>
     allScores?.find((r) => r.scope === `${mode}:L${level}`) || null
+  // Your personal best for a mode+level (kept locally).
+  const myScoreFor = (mode, level) => myScores[`${mode}:L${level}`] || 0
   // Best for the currently selected scope (null if scores couldn't load).
   const globalBest = allScores ? scoreFor(currentMode, selectedLevel) || { score: 0, name: '' } : null
 
@@ -135,11 +164,17 @@ export default function FallingView({ levels, onExit, onStudyWrong }) {
     const seen = new Set()
     setWrongCards(wrongRef.current.filter((c) => !seen.has(c.id) && seen.add(c.id)))
     sfx.gameOver()
-    setBest((b) => {
-      const nb = Math.max(b, scoreRef.current)
-      localStorage.setItem('langlearn.falling.best', String(nb))
-      return nb
-    })
+    // Record personal best for the scope just played.
+    const sc = playedScopeRef.current
+    if (sc) {
+      setMyScores((prev) => {
+        const key = `${sc.mode}:L${sc.level}`
+        if (scoreRef.current <= (prev[key] || 0)) return prev
+        const next = { ...prev, [key]: scoreRef.current }
+        localStorage.setItem('langlearn.falling.scores', JSON.stringify(next))
+        return next
+      })
+    }
   }
 
   function loseLife() {
@@ -167,7 +202,9 @@ export default function FallingView({ levels, onExit, onStudyWrong }) {
     poolRef.current = poolForLevel(selectedLevel)
     audioModeRef.current = audioMode
     // Snapshot which scope this game counts toward (the chooser can change after).
-    setPlayedScope({ mode: audioMode ? 'audio' : 'word', level: selectedLevel })
+    const scope = { mode: audioMode ? 'audio' : 'word', level: selectedLevel }
+    playedScopeRef.current = scope
+    setPlayedScope(scope)
     setPlayedBest(globalBest)
     scoreRef.current = 0
     livesRef.current = START_LIVES
@@ -239,7 +276,7 @@ export default function FallingView({ levels, onExit, onStudyWrong }) {
               </p>
             )}
             <p className="muted">
-              Your best: {Math.max(best, score)}
+              Your best: {playedScope ? Math.max(myScoreFor(playedScope.mode, playedScope.level), score) : score}
               {playedBest && <> · 🌍 Global: {playedBest.score}{playedBest.name ? ` (${playedBest.name})` : ''}</>}
             </p>
 
@@ -270,50 +307,62 @@ export default function FallingView({ levels, onExit, onStudyWrong }) {
           </p>
         )}
 
-        <div className="level-choose">
-          {levels.map((l) => (
-            <button
-              key={l.id}
-              className={`level-pick ${selectedLevel === l.level ? 'active' : ''}`}
-              onClick={() => selectLevel(l.level)}
-            >
-              <span className="lp-num">Lvl {l.level}</span>
-              <span className="lp-count">{l.level * 50} words</span>
-            </button>
-          ))}
+        <div className="game-setup">
+          <div className="setup-group">
+            <span className="setup-label">Level</span>
+            <div className="level-choose">
+              {levels.map((l) => (
+                <button
+                  key={l.id}
+                  className={`level-pick ${selectedLevel === l.level ? 'active' : ''}`}
+                  onClick={() => selectLevel(l.level)}
+                >
+                  <span className="lp-num">Lvl {l.level}</span>
+                  <span className="lp-count">{l.level * 50} words</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="setup-group">
+            <span className="setup-label">Mode</span>
+            <div className="mode-seg" role="group" aria-label="Game mode">
+              <button className={!audioMode ? 'active' : ''} onClick={() => toggleAudioMode(false)}>
+                Word
+              </button>
+              <button className={audioMode ? 'active' : ''} onClick={() => toggleAudioMode(true)}>
+                🔊 Audio
+              </button>
+            </div>
+            <span className="setup-hint">
+              {audioMode ? 'Word hidden — identify it by ear (plays once).' : 'Read the pinyin and tap the meaning.'}
+            </span>
+          </div>
         </div>
 
-        <label className="audio-mode-toggle">
-          <input
-            type="checkbox"
-            checked={audioMode}
-            onChange={(e) => toggleAudioMode(e.target.checked)}
-          />
-          <span>🔊 Audio mode — word hidden, hear it once</span>
-        </label>
-
-        {!gameOver && allScores && allScores.length > 0 && (
-          <div className="leaderboard">
-            <h3>🏆 High scores</h3>
-            <table className="lb-table">
-              <thead>
-                <tr><th></th><th>Word</th><th>🔊 Audio</th></tr>
-              </thead>
-              <tbody>
-                {levels.map((l) => {
-                  const w = scoreFor('word', l.level)
-                  const a = scoreFor('audio', l.level)
-                  const cell = (r) => (r ? <>{r.score}{r.name ? <span className="lb-name"> {r.name}</span> : ''}</> : '—')
-                  return (
-                    <tr key={l.id}>
-                      <td className="lb-lvl">Lvl {l.level}</td>
-                      <td>{cell(w)}</td>
-                      <td>{cell(a)}</td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+        {!gameOver && (
+          <div className="leaderboards">
+            <div className="leaderboard">
+              <h3>👤 My high scores</h3>
+              <LeaderTable
+                levels={levels}
+                selectedLevel={selectedLevel}
+                cell={(mode, level) => myScoreFor(mode, level) || '—'}
+              />
+            </div>
+            {allScores && (
+              <div className="leaderboard">
+                <h3>🌍 Global high scores</h3>
+                <LeaderTable
+                  levels={levels}
+                  selectedLevel={selectedLevel}
+                  cell={(mode, level) => {
+                    const r = scoreFor(mode, level)
+                    return r ? <>{r.score}{r.name ? <span className="lb-name"> {r.name}</span> : ''}</> : '—'
+                  }}
+                />
+              </div>
+            )}
           </div>
         )}
 

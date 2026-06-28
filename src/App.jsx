@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { levels, allCards, getLevel } from './data/levels.js'
 import { useProgress } from './hooks/useProgress.js'
 import { useSettings } from './hooks/useSettings.js'
-import { isDue, masteryLevel, QUALITIES } from './lib/srs.js'
+import { bucketOf, BUCKET_LABELS } from './lib/srs.js'
 import Dashboard from './components/Dashboard.jsx'
 import StudyView from './components/StudyView.jsx'
 import QuizView from './components/QuizView.jsx'
@@ -19,26 +19,8 @@ export default function App() {
   const immersive = view.name === 'falling' // full-screen, no footer/scroll
 
   const stats = useMemo(() => {
-    let mastered = 0
-    let learning = 0
-    let due = 0
-    for (const card of allCards) {
-      const p = progress[card.id]
-      const level = masteryLevel(p)
-      if (level === 'mastered') mastered++
-      else if (level === 'learning' || level === 'seen') learning++
-      if (isDue(p)) due++
-    }
-    return { total: allCards.length, mastered, learning, due }
-  }, [progress])
-
-  // How many cards were last rated Again / Hard / Good / Easy, for filtered review.
-  const ratingCounts = useMemo(() => {
-    const counts = { 0: 0, 1: 0, 2: 0, 3: 0 }
-    for (const card of allCards) {
-      const q = progress[card.id]?.lastQuality
-      if (q != null) counts[q] += 1
-    }
+    const counts = { mastered: 0, forgot: 0, unseen: 0 }
+    for (const card of allCards) counts[bucketOf(progress[card.id])]++
     return counts
   }, [progress])
 
@@ -46,7 +28,6 @@ export default function App() {
     <div className="app">
       <header className="topbar">
         <button className="brand" onClick={() => setView({ name: 'dashboard' })}>
-          <span className="brand-flag">🇨🇳</span>
           <span className="brand-name">LangLearn</span>
           <span className="brand-sub">Mandarin · Pinyin</span>
         </button>
@@ -55,13 +36,13 @@ export default function App() {
             className={view.name === 'dashboard' ? 'active' : ''}
             onClick={() => setView({ name: 'dashboard' })}
           >
-            🏠 <span className="nav-label">Dashboard</span>
+            Dashboard
           </button>
           <button
             className={view.name === 'settings' ? 'active' : ''}
             onClick={() => setView({ name: 'settings' })}
           >
-            ⚙️ <span className="nav-label">Settings</span>
+            Settings
           </button>
         </nav>
       </header>
@@ -72,16 +53,13 @@ export default function App() {
             levels={levels}
             progress={progress}
             stats={stats}
-            ratingCounts={ratingCounts}
             onStudy={(levelId) => setView({ name: 'study', levelId })}
             onQuiz={(levelId) => setView({ name: 'quiz', levelId })}
             onType={(levelId) => setView({ name: 'typing', levelId })}
-            onReview={(quality) => setView({ name: 'review', quality })}
+            onStudyBucket={(bucket) => setView({ name: 'studyset', bucket })}
             onListen={(levelId) => setView({ name: 'listen', levelId })}
-            onListenAll={() => setView({ name: 'listen', all: true })}
             onFalling={() => setView({ name: 'falling' })}
             onList={(levelId) => setView({ name: 'list', levelId })}
-            onReset={reset}
           />
         )}
 
@@ -97,11 +75,11 @@ export default function App() {
           />
         )}
 
-        {view.name === 'review' && (
+        {view.name === 'studyset' && (
           <StudyView
-            cards={allCards.filter((c) => progress[c.id]?.lastQuality === view.quality)}
-            label={`${QUALITIES[view.quality].label} cards`}
-            sessionKey={`review-${view.quality}`}
+            cards={allCards.filter((c) => bucketOf(progress[c.id]) === view.bucket)}
+            label={`${BUCKET_LABELS[view.bucket]} words`}
+            sessionKey={`bucket-${view.bucket}`}
             progress={progress}
             grade={grade}
             direction={settings.direction}
@@ -178,16 +156,11 @@ export default function App() {
           <Settings
             settings={settings}
             update={update}
+            onReset={reset}
             onExit={() => setView({ name: 'dashboard' })}
           />
         )}
       </main>
-
-      {!immersive && (
-        <footer className="footer">
-          Built with React · progress saved locally in your browser
-        </footer>
-      )}
     </div>
   )
 }
