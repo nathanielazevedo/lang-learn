@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { decks, allCards, getDeck } from './data/decks.js'
+import { levels, allCards, getLevel } from './data/levels.js'
 import { useProgress } from './hooks/useProgress.js'
 import { useSettings } from './hooks/useSettings.js'
 import { isDue, masteryLevel, QUALITIES } from './lib/srs.js'
@@ -8,6 +8,7 @@ import StudyView from './components/StudyView.jsx'
 import QuizView from './components/QuizView.jsx'
 import TypingView from './components/TypingView.jsx'
 import ListenView from './components/ListenView.jsx'
+import ListWords from './components/ListWords.jsx'
 import FallingView from './components/FallingView.jsx'
 import Settings from './components/Settings.jsx'
 
@@ -68,26 +69,27 @@ export default function App() {
       <main className={`container${immersive ? ' immersive' : ''}`}>
         {view.name === 'dashboard' && (
           <Dashboard
-            decks={decks}
+            levels={levels}
             progress={progress}
             stats={stats}
             ratingCounts={ratingCounts}
-            onStudy={(deckId) => setView({ name: 'study', deckId })}
-            onQuiz={(deckId) => setView({ name: 'quiz', deckId })}
-            onType={(deckId) => setView({ name: 'typing', deckId })}
+            onStudy={(levelId) => setView({ name: 'study', levelId })}
+            onQuiz={(levelId) => setView({ name: 'quiz', levelId })}
+            onType={(levelId) => setView({ name: 'typing', levelId })}
             onReview={(quality) => setView({ name: 'review', quality })}
-            onListen={(deckId) => setView({ name: 'listen', deckId })}
+            onListen={(levelId) => setView({ name: 'listen', levelId })}
             onListenAll={() => setView({ name: 'listen', all: true })}
             onFalling={() => setView({ name: 'falling' })}
+            onList={(levelId) => setView({ name: 'list', levelId })}
             onReset={reset}
           />
         )}
 
         {view.name === 'study' && (
           <StudyView
-            cards={getDeck(view.deckId).cards}
-            label={`${getDeck(view.deckId).flag} ${getDeck(view.deckId).name}`}
-            sessionKey={view.deckId}
+            cards={getLevel(view.levelId).cards}
+            label={getLevel(view.levelId).name}
+            sessionKey={view.levelId}
             progress={progress}
             grade={grade}
             direction={settings.direction}
@@ -110,7 +112,9 @@ export default function App() {
 
         {view.name === 'quiz' && (
           <QuizView
-            deckId={view.deckId}
+            cards={getLevel(view.levelId).cards}
+            label={getLevel(view.levelId).name}
+            sessionKey={view.levelId}
             grade={grade}
             direction={settings.direction}
             onExit={() => setView({ name: 'dashboard' })}
@@ -119,7 +123,9 @@ export default function App() {
 
         {view.name === 'typing' && (
           <TypingView
-            deckId={view.deckId}
+            cards={getLevel(view.levelId).cards}
+            label={getLevel(view.levelId).name}
+            sessionKey={view.levelId}
             grade={grade}
             direction={settings.direction}
             onExit={() => setView({ name: 'dashboard' })}
@@ -128,9 +134,9 @@ export default function App() {
 
         {view.name === 'listen' && (
           <ListenView
-            cards={view.all ? allCards : getDeck(view.deckId).cards}
-            label={view.all ? '🎧 All words' : `${getDeck(view.deckId).flag} ${getDeck(view.deckId).name}`}
-            sessionKey={view.all ? 'listen-all' : `listen-${view.deckId}`}
+            cards={view.all ? allCards : getLevel(view.levelId).cards}
+            label={view.all ? '🎧 All words' : getLevel(view.levelId).name}
+            sessionKey={view.all ? 'listen-all' : `listen-${view.levelId}`}
             direction={settings.direction}
             delay={settings.listenDelay}
             onDelayChange={(d) => update({ listenDelay: d })}
@@ -140,7 +146,7 @@ export default function App() {
 
         {view.name === 'falling' && (
           <FallingView
-            cards={allCards}
+            levels={levels}
             onExit={() => setView({ name: 'dashboard' })}
             onStudyWrong={(cards) => setView({ name: 'studywrong', cards })}
           />
@@ -155,6 +161,15 @@ export default function App() {
             grade={grade}
             direction={settings.direction}
             prioritizeDue={false}
+            onExit={() => setView({ name: 'dashboard' })}
+          />
+        )}
+
+        {view.name === 'list' && (
+          <ListWords
+            cards={getLevel(view.levelId).cards}
+            label={getLevel(view.levelId).name}
+            progress={progress}
             onExit={() => setView({ name: 'dashboard' })}
           />
         )}

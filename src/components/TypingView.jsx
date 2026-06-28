@@ -1,5 +1,4 @@
 import { useMemo, useRef, useState } from 'react'
-import { getDeck } from '../data/decks.js'
 import { checkAnswer } from '../lib/answer.js'
 import SpeakButton from './SpeakButton.jsx'
 
@@ -12,10 +11,9 @@ function shuffle(arr) {
   return a
 }
 
-export default function TypingView({ deckId, grade, onExit, direction }) {
-  const deck = getDeck(deckId)
+export default function TypingView({ cards, label, sessionKey, grade, onExit, direction }) {
   const pinyinFirst = direction === 'pinyin-first'
-  const questions = useMemo(() => shuffle(deck.cards).slice(0, 10), [deckId])
+  const questions = useMemo(() => shuffle(cards).slice(0, 10), [sessionKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const [index, setIndex] = useState(0)
   const [value, setValue] = useState('')
@@ -69,14 +67,14 @@ export default function TypingView({ deckId, grade, onExit, direction }) {
     <div className="session">
       <div className="session-top">
         <button className="ghost" onClick={onExit}>← Exit</button>
-        <span className="muted">{index + 1} / {questions.length} · {deck.flag} {deck.name}</span>
+        <span className="muted">{index + 1} / {questions.length} · {label}</span>
       </div>
 
       <div className="quiz-prompt">
         <span className="muted small">{promptLabel}</span>
         <h2>
           {prompt}
-          {pinyinFirst && <SpeakButton text={card.hanzi || card.term} label={card.term} />}
+          {pinyinFirst && <SpeakButton card={card} />}
         </h2>
       </div>
 
@@ -106,7 +104,7 @@ export default function TypingView({ deckId, grade, onExit, direction }) {
           ) : (
             <span>
               ✗ Answer: <strong>{expected}</strong>
-              {!pinyinFirst && <SpeakButton text={card.hanzi || card.term} label={card.term} />}
+              {!pinyinFirst && <SpeakButton card={card} />}
             </span>
           )}
           <button className="primary wide" onClick={next} autoFocus>

@@ -1,17 +1,17 @@
 import { isDue, masteryLevel, QUALITIES } from '../lib/srs.js'
 
-function deckStats(deck, progress) {
+function levelStats(level, progress) {
   let mastered = 0
   let due = 0
-  for (const card of deck.cards) {
+  for (const card of level.cards) {
     const p = progress[card.id]
     if (masteryLevel(p) === 'mastered') mastered++
     if (isDue(p)) due++
   }
-  return { mastered, due, total: deck.cards.length }
+  return { mastered, due, total: level.cards.length }
 }
 
-export default function Dashboard({ decks, progress, stats, ratingCounts, onStudy, onQuiz, onType, onReview, onListen, onListenAll, onFalling, onReset }) {
+export default function Dashboard({ levels, progress, stats, ratingCounts, onStudy, onQuiz, onType, onReview, onListen, onListenAll, onFalling, onList, onReset }) {
   const hasRatings = QUALITIES.some((g) => ratingCounts[g.q] > 0)
 
   return (
@@ -37,7 +37,7 @@ export default function Dashboard({ decks, progress, stats, ratingCounts, onStud
       {hasRatings && (
         <section>
           <h2>Study by rating</h2>
-          <p className="muted small">Drill the cards you last marked a certain way, across all decks.</p>
+          <p className="muted small">Drill the cards you last marked a certain way, across all levels.</p>
           <div className="rating-row">
             {QUALITIES.map((g) => {
               const count = ratingCounts[g.q]
@@ -58,18 +58,18 @@ export default function Dashboard({ decks, progress, stats, ratingCounts, onStud
       )}
 
       <section>
-        <h2>Decks</h2>
+        <h2>Levels</h2>
         <div className="deck-grid">
-          {decks.map((deck) => {
-            const s = deckStats(deck, progress)
+          {levels.map((level) => {
+            const s = levelStats(level, progress)
             const pct = Math.round((s.mastered / s.total) * 100)
             return (
-              <article className="deck-card" key={deck.id}>
+              <article className="deck-card" key={level.id}>
                 <div className="deck-head">
-                  <span className="flag">{deck.flag}</span>
+                  <span className="level-badge">{level.level}</span>
                   <div>
-                    <h3>{deck.name}</h3>
-                    <p className="muted">{s.total} words · {s.due} due</p>
+                    <h3>{level.name}</h3>
+                    <p className="muted">{level.subtitle} · {s.due} due</p>
                   </div>
                 </div>
                 <div className="progress-bar" aria-label={`${pct}% mastered`}>
@@ -77,12 +77,13 @@ export default function Dashboard({ decks, progress, stats, ratingCounts, onStud
                 </div>
                 <p className="muted small">{pct}% mastered</p>
                 <div className="deck-actions">
-                  <button className="primary" onClick={() => onStudy(deck.id)}>
+                  <button className="primary" onClick={() => onStudy(level.id)}>
                     Study
                   </button>
-                  <button onClick={() => onQuiz(deck.id)}>Quiz</button>
-                  <button onClick={() => onType(deck.id)}>Type</button>
-                  <button onClick={() => onListen(deck.id)}>🎧 Listen</button>
+                  <button onClick={() => onQuiz(level.id)}>Quiz</button>
+                  <button onClick={() => onType(level.id)}>Type</button>
+                  <button onClick={() => onListen(level.id)}>🎧 Listen</button>
+                  <button onClick={() => onList(level.id)}>📋 List</button>
                 </div>
               </article>
             )

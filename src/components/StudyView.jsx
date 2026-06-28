@@ -69,7 +69,7 @@ export default function StudyView({
       />
 
       <div className="speak-row">
-        <SpeakButton text={card.hanzi || card.term} label={card.term} size="lg" />
+        <SpeakButton card={card} size="lg" />
         <span className="muted small">hear it</span>
       </div>
 

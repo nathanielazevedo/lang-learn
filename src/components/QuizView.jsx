@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react'
-import { getDeck } from '../data/decks.js'
 import SpeakButton from './SpeakButton.jsx'
 
 function shuffle(arr) {
@@ -13,14 +12,14 @@ function shuffle(arr) {
 
 // Build multiple-choice questions. Direction decides which side is the prompt
 // and which side you pick: pinyin-first => show pinyin, pick English; and vice versa.
-function buildQuiz(deck, direction) {
+function buildQuiz(pool, direction) {
   const pinyinFirst = direction === 'pinyin-first'
   const promptField = pinyinFirst ? 'term' : 'translation'
   const answerField = pinyinFirst ? 'translation' : 'term'
 
-  const cards = shuffle(deck.cards).slice(0, 10)
+  const cards = shuffle(pool).slice(0, 10)
   return cards.map((card) => {
-    const distractors = shuffle(deck.cards.filter((c) => c.id !== card.id))
+    const distractors = shuffle(pool.filter((c) => c.id !== card.id))
       .slice(0, 3)
       .map((c) => c[answerField])
     return {
@@ -34,9 +33,8 @@ function buildQuiz(deck, direction) {
   })
 }
 
-export default function QuizView({ deckId, grade, onExit, direction }) {
-  const deck = getDeck(deckId)
-  const quiz = useMemo(() => buildQuiz(deck, direction), [deckId, direction])
+export default function QuizView({ cards, label, sessionKey, grade, onExit, direction }) {
+  const quiz = useMemo(() => buildQuiz(cards, direction), [sessionKey, direction]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const [index, setIndex] = useState(0)
   const [picked, setPicked] = useState(null)
@@ -79,14 +77,14 @@ export default function QuizView({ deckId, grade, onExit, direction }) {
     <div className="session">
       <div className="session-top">
         <button className="ghost" onClick={onExit}>← Exit</button>
-        <span className="muted">{index + 1} / {quiz.length} · {deck.flag} {deck.name}</span>
+        <span className="muted">{index + 1} / {quiz.length} · {label}</span>
       </div>
 
       <div className="quiz-prompt">
         <span className="muted small">{promptLabel}</span>
         <h2>
           {q.prompt}
-          <SpeakButton text={q.hanzi || q.term} label={q.term} />
+          <SpeakButton card={q} />
         </h2>
       </div>
 

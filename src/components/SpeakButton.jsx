@@ -1,18 +1,17 @@
-import { speak, speechAvailable } from '../lib/speech.js'
+import { playWord } from '../lib/audio.js'
 
-// `text` is what gets spoken (hanzi for accurate TTS); `label` is what the user
-// knows the word as (pinyin), used for the accessible label only.
-export default function SpeakButton({ text, label, size = '' }) {
-  if (!speechAvailable() || !text) return null
+// Plays the word's pronunciation (pre-generated file, or browser TTS fallback).
+export default function SpeakButton({ card, size = '' }) {
+  if (!card) return null
   return (
     <button
       type="button"
       className={`speak-btn ${size}`}
       onClick={(e) => {
         e.stopPropagation()
-        speak(text)
+        playWord(card)
       }}
-      aria-label={`Play pronunciation of ${label || text}`}
+      aria-label={`Play pronunciation of ${card.term}`}
       title="Play pronunciation"
     >
       🔊

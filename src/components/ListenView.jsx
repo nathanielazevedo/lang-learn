@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { speakThen, stopSpeaking, speechAvailable } from '../lib/speech.js'
+import { speakThen, speechAvailable } from '../lib/speech.js'
+import { playWordThen, stopAudio } from '../lib/audio.js'
 
 function shuffle(arr) {
   const a = [...arr]
@@ -42,12 +43,12 @@ export default function ListenView({ cards, label, sessionKey, direction, delay,
       timers.push(setTimeout(() => !cancelled && fn(), ms))
     }
 
-    const front = pinyinFirst
-      ? { text: card.hanzi || card.term, lang: 'zh-CN' }
-      : { text: card.translation, lang: 'en-US' }
-    const back = pinyinFirst
-      ? { text: card.translation, lang: 'en-US' }
-      : { text: card.hanzi || card.term, lang: 'zh-CN' }
+    // The Chinese side uses the generated pronunciation file (with TTS fallback);
+    // the English side uses browser speech. Which is front depends on direction.
+    const playChinese = (cb) => playWordThen(card, cb)
+    const playEnglish = (cb) => speakThen(card.translation, 'en-US', cb)
+    const playFront = pinyinFirst ? playChinese : playEnglish
+    const playBack = pinyinFirst ? playEnglish : playChinese
 
     const goNext = () => {
       const next = index + 1
@@ -63,12 +64,12 @@ export default function ListenView({ cards, label, sessionKey, direction, delay,
     }
 
     setPhase('front')
-    speakThen(front.text, front.lang, () => {
+    playFront(() => {
       if (cancelled) return
       setPhase('think')
       addTimer(() => {
         setPhase('back')
-        speakThen(back.text, back.lang, () => {
+        playBack(() => {
           if (cancelled) return
           addTimer(goNext, GAP_MS)
         })
@@ -78,12 +79,12 @@ export default function ListenView({ cards, label, sessionKey, direction, delay,
     return () => {
       cancelled = true
       timers.forEach(clearTimeout)
-      stopSpeaking()
+      stopAudio()
     }
   }, [index, playing, queue, pinyinFirst])
 
   // Stop any audio if we leave the screen.
-  useEffect(() => () => stopSpeaking(), [])
+  useEffect(() => () => stopAudio(), [])
 
   if (!speechAvailable()) {
     return (

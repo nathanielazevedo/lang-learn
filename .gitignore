@@ -34,3 +34,7 @@ pnpm-debug.log*
 
 # Vercel
 .vercel
+
+# Local audio-generation script (run with your own OPENAI_API_KEY)
+scripts/generate-audio.mjs
+

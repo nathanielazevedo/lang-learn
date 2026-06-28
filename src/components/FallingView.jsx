@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { sfx } from '../lib/sfx.js'
+import { playWord } from '../lib/audio.js'
 import SpeakButton from './SpeakButton.jsx'
 
 function shuffle(arr) {
@@ -26,10 +27,18 @@ function fallDuration(score) {
 
 const START_LIVES = 3
 const MUTE_KEY = 'langlearn.falling.muted'
+const LEVEL_KEY = 'langlearn.falling.level'
+const AUDIO_KEY = 'langlearn.falling.audio'
 
 // Arcade mode: pinyin words fall from the top; tap the matching English before
-// they hit the bottom. Wrong tap or a missed word costs a life.
-export default function FallingView({ cards, onExit, onStudyWrong }) {
+// they hit the bottom. Higher levels include every word from earlier levels.
+export default function FallingView({ levels, onExit, onStudyWrong }) {
+  const maxLevel = levels[levels.length - 1].level
+  const [selectedLevel, setSelectedLevel] = useState(() => {
+    const saved = Number(localStorage.getItem(LEVEL_KEY) || 1)
+    return Math.min(maxLevel, Math.max(1, saved))
+  })
+
   const [score, setScore] = useState(0)
   const [lives, setLives] = useState(START_LIVES)
   const [running, setRunning] = useState(false)
@@ -38,19 +47,28 @@ export default function FallingView({ cards, onExit, onStudyWrong }) {
   const [round, setRound] = useState(null)
   const [pos, setPos] = useState(0)
   const [feedback, setFeedback] = useState(null) // 'correct' | 'wrong'
-  const [pops, setPops] = useState([]) // floating "+N" labels
+  const [pops, setPops] = useState([])
   const [muted, setMuted] = useState(() => localStorage.getItem(MUTE_KEY) === '1')
-  const [wrongCards, setWrongCards] = useState([]) // words missed this game, for review
+  const [wrongCards, setWrongCards] = useState([])
+  // Audio mode: the word is hidden and you identify it by hearing it once.
+  const [audioMode, setAudioMode] = useState(() => localStorage.getItem(AUDIO_KEY) === '1')
 
   const posRef = useRef(0)
   const scoreRef = useRef(0)
   const livesRef = useRef(START_LIVES)
-  const streakRef = useRef(0) // internal only: rises the correct-sound pitch
-  const wrongRef = useRef([]) // cards missed this game
+  const streakRef = useRef(0)
+  const wrongRef = useRef([])
+  const poolRef = useRef([])
+  const audioModeRef = useRef(false)
   const popId = useRef(0)
   const flashTimer = useRef(null)
 
   useEffect(() => { sfx.setEnabled(!muted) }, [muted])
+
+  // Cumulative pool for a level: every word from level 1 up to it.
+  function poolForLevel(level) {
+    return levels.filter((l) => l.level <= level).flatMap((l) => l.cards)
+  }
 
   function flash(kind) {
     setFeedback(kind)
@@ -67,14 +85,15 @@ export default function FallingView({ cards, onExit, onStudyWrong }) {
   function spawn() {
     posRef.current = 0
     setPos(0)
-    setRound(buildRound(cards))
+    const next = buildRound(poolRef.current)
+    setRound(next)
+    if (audioModeRef.current) playWord(next.card) // hear it once
   }
 
   function endGame() {
     setRunning(false)
     setGameOver(true)
     setRound(null)
-    // De-duplicate missed words (the same word can fall more than once).
     const seen = new Set()
     setWrongCards(wrongRef.current.filter((c) => !seen.has(c.id) && seen.add(c.id)))
     sfx.gameOver()
@@ -96,7 +115,19 @@ export default function FallingView({ cards, onExit, onStudyWrong }) {
     else spawn()
   }
 
+  function selectLevel(level) {
+    setSelectedLevel(level)
+    localStorage.setItem(LEVEL_KEY, String(level))
+  }
+
+  function toggleAudioMode(v) {
+    setAudioMode(v)
+    localStorage.setItem(AUDIO_KEY, v ? '1' : '0')
+  }
+
   function start() {
+    poolRef.current = poolForLevel(selectedLevel)
+    audioModeRef.current = audioMode
     scoreRef.current = 0
     livesRef.current = START_LIVES
     streakRef.current = 0
@@ -114,7 +145,7 @@ export default function FallingView({ cards, onExit, onStudyWrong }) {
   function answer(option) {
     if (!round || !running) return
     if (option === round.card.translation) {
-      const gained = Math.max(1, Math.ceil((100 - posRef.current) / 12)) // catch higher = more
+      const gained = Math.max(1, Math.ceil((100 - posRef.current) / 12))
       scoreRef.current += gained
       setScore(scoreRef.current)
       addPop(`+${gained}`, posRef.current, 'good')
@@ -151,40 +182,64 @@ export default function FallingView({ cards, onExit, onStudyWrong }) {
 
   useEffect(() => () => clearTimeout(flashTimer.current), [])
 
-  // --- Intro / game-over screens ---
+  // --- Intro / game-over screen (also where you pick the level) ---
   if (!running) {
     return (
       <div className="session done">
         <h2>{gameOver ? 'Game over' : '🕹️ Falling Words'}</h2>
+
         {gameOver ? (
           <>
             <div className="score-ring">{score}</div>
             <p className="muted">{score >= best && score > 0 ? '🏆 New best!' : `Best: ${best}`}</p>
-
-            {wrongCards.length > 0 && (
-              <div className="wrong-review">
-                <h3>Words to review ({wrongCards.length})</h3>
-                <div className="wrong-list">
-                  {wrongCards.map((c) => (
-                    <div className="wrong-item" key={c.id}>
-                      <span className="w-term">{c.term}</span>
-                      <span className="w-trans">{c.translation}</span>
-                      <SpeakButton text={c.hanzi || c.term} label={c.term} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </>
         ) : (
           <p className="muted">
             Tap the English meaning before each pinyin word hits the bottom.<br />
-            A wrong tap or a missed word costs a life. You have {START_LIVES}.
+            Higher levels include all the words from earlier levels.
           </p>
         )}
+
+        <div className="level-choose">
+          {levels.map((l) => (
+            <button
+              key={l.id}
+              className={`level-pick ${selectedLevel === l.level ? 'active' : ''}`}
+              onClick={() => selectLevel(l.level)}
+            >
+              <span className="lp-num">Lvl {l.level}</span>
+              <span className="lp-count">{l.level * 50} words</span>
+            </button>
+          ))}
+        </div>
+
+        <label className="audio-mode-toggle">
+          <input
+            type="checkbox"
+            checked={audioMode}
+            onChange={(e) => toggleAudioMode(e.target.checked)}
+          />
+          <span>🔊 Audio mode — word hidden, hear it once</span>
+        </label>
+
+        {gameOver && wrongCards.length > 0 && (
+          <div className="wrong-review">
+            <h3>Words to review ({wrongCards.length})</h3>
+            <div className="wrong-list">
+              {wrongCards.map((c) => (
+                <div className="wrong-item" key={c.id}>
+                  <span className="w-term">{c.term}</span>
+                  <span className="w-trans">{c.translation}</span>
+                  <SpeakButton card={c} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="intro-actions">
           <button className="primary wide" onClick={start}>
-            {gameOver ? '↻ Play again' : '▶ Start'}
+            {gameOver ? `↻ Play Level ${selectedLevel}` : `▶ Start Level ${selectedLevel}`}
           </button>
           {gameOver && wrongCards.length > 0 && onStudyWrong && (
             <button className="wide" onClick={() => onStudyWrong(wrongCards)}>
@@ -223,8 +278,11 @@ export default function FallingView({ cards, onExit, onStudyWrong }) {
 
       <div className={`fall-field ${feedback || ''}`}>
         {round && (
-          <div className={`fall-word ${wordState}`} style={{ top: `${pos}%` }}>
-            {round.card.term}
+          <div
+            className={`fall-word ${wordState} ${audioMode ? 'audio' : ''}`}
+            style={{ top: `${pos}%` }}
+          >
+            {audioMode ? '🔊' : round.card.term}
           </div>
         )}
         {pops.map((p) => (
