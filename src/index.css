@@ -359,6 +359,8 @@ section h2 { font-size: 1.2rem; margin-bottom: 14px; }
 .setup-group { display: flex; flex-direction: column; gap: 6px; }
 .setup-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); }
 .setup-hint { font-size: 0.78rem; color: var(--muted); }
+.download-words { align-self: flex-start; font-size: 0.8rem; color: var(--accent-2); padding: 4px 0; min-height: 0; }
+.download-words:hover { text-decoration: underline; }
 
 /* Segmented Word / Audio mode control */
 .mode-seg { display: flex; gap: 4px; background: var(--surface-2); border-radius: 12px; padding: 4px; }

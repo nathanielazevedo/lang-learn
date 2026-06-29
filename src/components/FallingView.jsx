@@ -138,6 +138,29 @@ export default function FallingView({ levels, onExit, onStudyWrong }) {
     return levels.filter((l) => l.level <= level).flatMap((l) => l.cards)
   }
 
+  // Export the selected level's full vocabulary as a .txt you can paste into
+  // ChatGPT to drive a conversation limited to exactly these words.
+  function downloadWordList() {
+    const pool = poolForLevel(selectedLevel)
+    const list = pool.map((c) => `${c.hanzi}\t${c.term}\t${c.translation}`).join('\n')
+    const text = `I'm learning Mandarin Chinese. Below is the COMPLETE set of ${pool.length} words I know so far (through Level ${selectedLevel}).
+
+Please have a natural spoken-style conversation with me in Mandarin using ONLY these words — do not introduce any vocabulary or characters outside this list. Keep your sentences short and reuse words often. After each Chinese sentence, add the pinyin and an English translation on their own lines. Start by greeting me and asking a simple question.
+
+If staying strictly inside the list makes a reply impossible, tell me which word I'm missing instead of using an outside word.
+
+Word list (hanzi — pinyin — meaning):
+${list}
+`
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `mandarin-level-${selectedLevel}-words.txt`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   function flash(kind) {
     setFeedback(kind)
     clearTimeout(flashTimer.current)
@@ -323,6 +346,9 @@ export default function FallingView({ levels, onExit, onStudyWrong }) {
                 </button>
               ))}
             </div>
+            <button className="ghost download-words" onClick={downloadWordList}>
+              Download Level {selectedLevel} words for ChatGPT
+            </button>
           </div>
 
           <div className="setup-group">
