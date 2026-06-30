@@ -1,6 +1,6 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
-import { writeFile, mkdir } from 'node:fs/promises'
+import { writeFile, mkdir, access } from 'node:fs/promises'
 import { join } from 'node:path'
 import { createHighScoreStore, makeScope, cleanName } from './server/highscore.mjs'
 
@@ -39,9 +39,17 @@ function audioRegenPlugin(env) {
         if (!apiKey) return json(500, { error: 'OPENAI_API_KEY not set — add it to your .env file' })
 
         try {
-          const { id, text } = await readJson(req)
+          const { id, text, skipIfExists } = await readJson(req)
           if (!id || !/^[\w-]+$/.test(id)) return json(400, { error: 'Invalid id' })
           if (!text) return json(400, { error: 'Missing text' })
+
+          const dir = join(process.cwd(), 'public', 'audio')
+          const outPath = join(dir, `${id}.mp3`)
+          // Bulk generation passes skipIfExists so existing files cost nothing.
+          if (skipIfExists) {
+            const exists = await access(outPath).then(() => true).catch(() => false)
+            if (exists) return json(200, { ok: true, skipped: true })
+          }
 
           const model = env.TTS_MODEL || process.env.TTS_MODEL || 'gpt-4o-mini-tts'
           const voice = env.TTS_VOICE || process.env.TTS_VOICE || 'alloy'
@@ -59,9 +67,8 @@ function audioRegenPlugin(env) {
           if (!r.ok) return json(502, { error: `OpenAI ${r.status}: ${await r.text()}` })
 
           const buf = Buffer.from(await r.arrayBuffer())
-          const dir = join(process.cwd(), 'public', 'audio')
           await mkdir(dir, { recursive: true })
-          await writeFile(join(dir, `${id}.mp3`), buf)
+          await writeFile(outPath, buf)
           json(200, { ok: true })
         } catch (e) {
           json(500, { error: String(e?.message || e) })

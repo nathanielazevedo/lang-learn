@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { sfx } from '../lib/sfx.js'
-import { playWord } from '../lib/audio.js'
+import { playWord, generateDeckAudio } from '../lib/audio.js'
+import { allCards } from '../data/levels.js'
 import { getAllHighScores, submitHighScore } from '../lib/highscore.js'
 import SpeakButton from './SpeakButton.jsx'
 
@@ -83,6 +84,9 @@ export default function FallingView({ levels, onExit, onStudyWrong }) {
   const [pops, setPops] = useState([])
   const [muted, setMuted] = useState(() => localStorage.getItem(MUTE_KEY) === '1')
   const [showScores, setShowScores] = useState(false)
+  const [audioBusy, setAudioBusy] = useState(false)
+  const [audioProgress, setAudioProgress] = useState(null) // { done, total } | null
+  const [audioMsg, setAudioMsg] = useState(null) // result string | null
   const [wrongCards, setWrongCards] = useState([])
   // Audio mode: the word is hidden and you identify it by hearing it once.
   const [audioMode, setAudioMode] = useState(() => localStorage.getItem(AUDIO_KEY) === '1')
@@ -159,6 +163,23 @@ ${list}
     a.download = `mandarin-level-${selectedLevel}-words.txt`
     a.click()
     URL.revokeObjectURL(url)
+  }
+
+  // Dev only: generate pronunciation mp3s for any words missing one, across the
+  // whole deck. Runs against the local dev server's OpenAI TTS endpoint.
+  async function generateAudio() {
+    setAudioBusy(true)
+    setAudioMsg(null)
+    setAudioProgress({ done: 0, total: allCards.length })
+    try {
+      const n = await generateDeckAudio(allCards, setAudioProgress)
+      setAudioMsg(n ? `Added ${n} new audio file${n === 1 ? '' : 's'}.` : 'All words already have audio.')
+    } catch (e) {
+      setAudioMsg(`⚠️ ${e.message || e}`)
+    } finally {
+      setAudioBusy(false)
+      setAudioProgress(null)
+    }
   }
 
   function flash(kind) {
@@ -422,6 +443,17 @@ ${list}
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {import.meta.env.DEV && (
+          <div className="dev-tools">
+            <button className="ghost" disabled={audioBusy} onClick={generateAudio}>
+              {audioBusy
+                ? `Generating audio… ${audioProgress?.done ?? 0}/${audioProgress?.total ?? 0}`
+                : 'Generate missing audio (whole deck)'}
+            </button>
+            {audioMsg && <span className="dev-note">{audioMsg}</span>}
           </div>
         )}
 

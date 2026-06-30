@@ -57,16 +57,32 @@ export function stopAudio() {
 }
 
 // Dev only: ask the dev server to (re)generate this word's audio file.
-export async function regenerateAudio(card) {
+// With { skipIfExists }, the server leaves an existing file untouched (no API
+// call) and returns { skipped: true }.
+export async function regenerateAudio(card, { skipIfExists = false } = {}) {
   const res = await fetch('/__regen-audio', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id: card.id, text: card.hanzi || card.term }),
+    body: JSON.stringify({ id: card.id, text: card.hanzi || card.term, skipIfExists }),
   })
   if (!res.ok) {
     const data = await res.json().catch(() => ({}))
     throw new Error(data.error || `Request failed (${res.status})`)
   }
+  return res.json().catch(() => ({}))
+}
+
+// Dev only: generate audio for every card that doesn't have a file yet, one at
+// a time so we don't hammer the API. Calls onProgress({ done, total }) as it
+// goes and resolves with the number of new files actually generated.
+export async function generateDeckAudio(cards, onProgress) {
+  let generated = 0
+  for (let i = 0; i < cards.length; i++) {
+    const data = await regenerateAudio(cards[i], { skipIfExists: true })
+    if (!data.skipped) generated++
+    onProgress?.({ done: i + 1, total: cards.length })
+  }
+  return generated
 }
 
 // Play a freshly written file, bypassing the browser cache.

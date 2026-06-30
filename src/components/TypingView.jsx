@@ -1,19 +1,11 @@
-import { useMemo, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { checkAnswer } from '../lib/answer.js'
 import SpeakButton from './SpeakButton.jsx'
 
-function shuffle(arr) {
-  const a = [...arr]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
-}
-
 export default function TypingView({ cards, label, sessionKey, grade, onExit, direction }) {
   const pinyinFirst = direction === 'pinyin-first'
-  const questions = useMemo(() => shuffle(cards).slice(0, 10), [sessionKey]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Run the whole deck, in order, every time.
+  const questions = cards
 
   const [index, setIndex] = useState(0)
   const [value, setValue] = useState('')
@@ -58,6 +50,15 @@ export default function TypingView({ cards, label, sessionKey, grade, onExit, di
     setIndex((i) => i + 1)
     setValue('')
     setResult(null)
+    requestAnimationFrame(() => inputRef.current?.focus())
+  }
+
+  // One wrong answer sends you back to the very beginning of the run.
+  function restart() {
+    setIndex(0)
+    setValue('')
+    setResult(null)
+    setScore(0)
     requestAnimationFrame(() => inputRef.current?.focus())
   }
 
@@ -107,8 +108,8 @@ export default function TypingView({ cards, label, sessionKey, grade, onExit, di
               {!pinyinFirst && <SpeakButton card={card} />}
             </span>
           )}
-          <button className="primary wide" onClick={next} autoFocus>
-            {isLast ? 'See results' : 'Next →'}
+          <button className="primary wide" onClick={result.correct ? next : restart} autoFocus>
+            {result.correct ? (isLast ? 'See results' : 'Next →') : '↺ Start over'}
           </button>
         </div>
       )}

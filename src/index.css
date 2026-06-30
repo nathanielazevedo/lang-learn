@@ -361,6 +361,13 @@ section h2 { font-size: 1.2rem; margin-bottom: 14px; }
 .setup-hint { font-size: 0.78rem; color: var(--muted); }
 .download-words { align-self: flex-start; font-size: 0.8rem; color: var(--accent-2); padding: 4px 0; min-height: 0; }
 .download-words:hover { text-decoration: underline; }
+.dev-tools {
+  width: 100%; max-width: 440px; margin: 0 auto;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 8px; border: 1px dashed #ffffff1f; border-radius: 10px;
+}
+.dev-tools button { font-size: 0.82rem; }
+.dev-note { font-size: 0.78rem; color: var(--muted); }
 
 /* Segmented Word / Audio mode control */
 .mode-seg { display: flex; gap: 4px; background: var(--surface-2); border-radius: 12px; padding: 4px; }
