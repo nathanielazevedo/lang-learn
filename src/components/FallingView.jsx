@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { sfx } from '../lib/sfx.js'
-import { playWord, generateDeckAudio } from '../lib/audio.js'
+import { playWord } from '../lib/audio.js'
 import { allCards } from '../data/levels.js'
 import { getAllHighScores, submitHighScore } from '../lib/highscore.js'
+import { downloadWordsForChatGPT } from '../lib/wordexport.js'
 import SpeakButton from './SpeakButton.jsx'
+import GenerateAudioButton from './GenerateAudioButton.jsx'
 
 function shuffle(arr) {
   const a = [...arr]
@@ -16,10 +18,10 @@ function shuffle(arr) {
 
 function buildRound(pool) {
   const card = pool[Math.floor(Math.random() * pool.length)]
-  const distractors = shuffle(pool.filter((c) => c.translation !== card.translation))
+  const distractors = shuffle(pool.filter((c) => c.english !== card.english))
     .slice(0, 3)
-    .map((c) => c.translation)
-  return { card, options: shuffle([card.translation, ...distractors]) }
+    .map((c) => c.english)
+  return { card, options: shuffle([card.english, ...distractors]) }
 }
 
 // Seconds for a word to fall, shrinking as the score climbs (gets harder).
@@ -54,7 +56,7 @@ const AUDIO_KEY = 'langlearn.falling.audio'
 
 // Arcade mode: pinyin words fall from the top; tap the matching English before
 // they hit the bottom. Higher levels include every word from earlier levels.
-export default function FallingView({ levels, onExit, onStudyWrong }) {
+export default function FallingView({ levels, grade, onExit, onStudyWrong }) {
   const maxLevel = levels[levels.length - 1].level
   const [selectedLevel, setSelectedLevel] = useState(() => {
     const saved = Number(localStorage.getItem(LEVEL_KEY) || 1)
@@ -84,9 +86,6 @@ export default function FallingView({ levels, onExit, onStudyWrong }) {
   const [pops, setPops] = useState([])
   const [muted, setMuted] = useState(() => localStorage.getItem(MUTE_KEY) === '1')
   const [showScores, setShowScores] = useState(false)
-  const [audioBusy, setAudioBusy] = useState(false)
-  const [audioProgress, setAudioProgress] = useState(null) // { done, total } | null
-  const [audioMsg, setAudioMsg] = useState(null) // result string | null
   const [wrongCards, setWrongCards] = useState([])
   // Audio mode: the word is hidden and you identify it by hearing it once.
   const [audioMode, setAudioMode] = useState(() => localStorage.getItem(AUDIO_KEY) === '1')
@@ -142,44 +141,10 @@ export default function FallingView({ levels, onExit, onStudyWrong }) {
     return levels.filter((l) => l.level <= level).flatMap((l) => l.cards)
   }
 
-  // Export the selected level's full vocabulary as a .txt you can paste into
-  // ChatGPT to drive a conversation limited to exactly these words.
+  // Export every word up to the selected level (the cumulative pool) as a .txt
+  // you can paste into ChatGPT to drive a conversation limited to those words.
   function downloadWordList() {
-    const pool = poolForLevel(selectedLevel)
-    const list = pool.map((c) => `${c.hanzi}\t${c.term}\t${c.translation}`).join('\n')
-    const text = `I'm learning Mandarin Chinese. Below is the COMPLETE set of ${pool.length} words I know so far (through Level ${selectedLevel}).
-
-Please have a natural spoken-style conversation with me in Mandarin using ONLY these words — do not introduce any vocabulary or characters outside this list. Keep your sentences short and reuse words often. After each Chinese sentence, add the pinyin and an English translation on their own lines. Start by greeting me and asking a simple question.
-
-If staying strictly inside the list makes a reply impossible, tell me which word I'm missing instead of using an outside word.
-
-Word list (hanzi — pinyin — meaning):
-${list}
-`
-    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `mandarin-level-${selectedLevel}-words.txt`
-    a.click()
-    URL.revokeObjectURL(url)
-  }
-
-  // Dev only: generate pronunciation mp3s for any words missing one, across the
-  // whole deck. Runs against the local dev server's OpenAI TTS endpoint.
-  async function generateAudio() {
-    setAudioBusy(true)
-    setAudioMsg(null)
-    setAudioProgress({ done: 0, total: allCards.length })
-    try {
-      const n = await generateDeckAudio(allCards, setAudioProgress)
-      setAudioMsg(n ? `Added ${n} new audio file${n === 1 ? '' : 's'}.` : 'All words already have audio.')
-    } catch (e) {
-      setAudioMsg(`⚠️ ${e.message || e}`)
-    } finally {
-      setAudioBusy(false)
-      setAudioProgress(null)
-    }
+    downloadWordsForChatGPT(poolForLevel(selectedLevel), `Level ${selectedLevel}`)
   }
 
   function flash(kind) {
@@ -225,7 +190,10 @@ ${list}
   function loseLife() {
     flash('wrong')
     sfx.wrong()
-    if (round?.card) wrongRef.current.push(round.card)
+    if (round?.card) {
+      wrongRef.current.push(round.card)
+      grade?.(round.card.id, 0) // wrong tap or missed word -> mark "forgot"
+    }
     streakRef.current = 0
     livesRef.current -= 1
     setLives(livesRef.current)
@@ -268,7 +236,8 @@ ${list}
 
   function answer(option) {
     if (!round || !running) return
-    if (option === round.card.translation) {
+    if (option === round.card.english) {
+      grade?.(round.card.id, 2) // correct -> mark "mastered"
       const gained = Math.max(1, Math.ceil((100 - posRef.current) / 12))
       scoreRef.current += gained
       setScore(scoreRef.current)
@@ -306,55 +275,86 @@ ${list}
 
   useEffect(() => () => clearTimeout(flashTimer.current), [])
 
-  // --- Intro / game-over screen (also where you pick the level) ---
+  // --- Game over: score, what you missed, then play again / back ---
+  if (gameOver) {
+    return (
+      <div className="session done">
+        <h2>Game over</h2>
+        <div className="score-ring">{score}</div>
+        {playedScope && (
+          <p className="scope-label">
+            Level {playedScope.level} · {playedScope.mode === 'audio' ? 'Audio mode' : 'Word mode'}
+          </p>
+        )}
+        <p className="muted">
+          Your best: {playedScope ? Math.max(myScoreFor(playedScope.mode, playedScope.level), score) : score}
+          {playedBest && <> · Global: {playedBest.score}{playedBest.name ? ` (${playedBest.name})` : ''}</>}
+        </p>
+
+        {playedBest && score > playedBest.score && !submitted && (
+          <div className="record-entry">
+            <span className="record-title">New global high score!</span>
+            <div className="initials-row">
+              <input
+                className="name-input"
+                value={name}
+                maxLength={12}
+                placeholder="name (optional)"
+                onChange={(e) => setName(e.target.value)}
+                aria-label="Your name (optional)"
+              />
+              <button className="primary" disabled={submitting} onClick={submitScore}>
+                {submitting ? '…' : 'Save'}
+              </button>
+            </div>
+          </div>
+        )}
+        {submitted && <p className="muted">Saved to the global leaderboard!</p>}
+
+        {wrongCards.length > 0 && (
+          <div className="wrong-review">
+            <h3>Words to review ({wrongCards.length})</h3>
+            <div className="wrong-list">
+              {wrongCards.map((c) => (
+                <div className="wrong-item" key={c.id}>
+                  <span className="w-term">{c.pinyin}</span>
+                  <span className="w-trans">{c.english}</span>
+                  <SpeakButton card={c} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="intro-actions">
+          <button className="primary wide" onClick={start}>↻ Play Level {selectedLevel}</button>
+          {wrongCards.length > 0 && onStudyWrong && (
+            <button className="wide" onClick={() => onStudyWrong(wrongCards)}>Study these words</button>
+          )}
+          <button className="wide" onClick={onExit}>Back to dashboard</button>
+        </div>
+      </div>
+    )
+  }
+
+  // --- Intro screen (pick level + mode, browse high scores) ---
   if (!running) {
     return (
       <div className="session done">
-        <h2>{gameOver ? 'Game over' : 'Falling Words'}</h2>
-
-        {gameOver ? (
-          <>
-            <div className="score-ring">{score}</div>
-            {playedScope && (
-              <p className="scope-label">
-                Level {playedScope.level} · {playedScope.mode === 'audio' ? 'Audio mode' : 'Word mode'}
-              </p>
-            )}
-            <p className="muted">
-              Your best: {playedScope ? Math.max(myScoreFor(playedScope.mode, playedScope.level), score) : score}
-              {playedBest && <> · Global: {playedBest.score}{playedBest.name ? ` (${playedBest.name})` : ''}</>}
-            </p>
-
-            {playedBest && score > playedBest.score && !submitted && (
-              <div className="record-entry">
-                <span className="record-title">New global high score!</span>
-                <div className="initials-row">
-                  <input
-                    className="name-input"
-                    value={name}
-                    maxLength={12}
-                    placeholder="name (optional)"
-                    onChange={(e) => setName(e.target.value)}
-                    aria-label="Your name (optional)"
-                  />
-                  <button className="primary" disabled={submitting} onClick={submitScore}>
-                    {submitting ? '…' : 'Save'}
-                  </button>
-                </div>
-              </div>
-            )}
-            {submitted && <p className="muted">Saved to the global leaderboard!</p>}
-          </>
-        ) : (
-          <p className="muted">
-            Tap the English meaning before each pinyin word hits the bottom.<br />
-            Higher levels include all the words from earlier levels.
-          </p>
-        )}
+        <h2>Falling Words</h2>
+        <p className="muted">
+          Tap the English meaning before each pinyin word hits the bottom.<br />
+          Higher levels include all the words from earlier levels.
+        </p>
 
         <div className="game-setup">
           <div className="setup-group">
-            <span className="setup-label">Level</span>
+            <div className="setup-head">
+              <span className="setup-label">Level</span>
+              <span className="setup-meta">
+                {selectedLevel * 50} words{selectedLevel > 1 ? ' · cumulative' : ''}
+              </span>
+            </div>
             <div className="level-choose">
               {levels.map((l) => (
                 <button
@@ -362,13 +362,12 @@ ${list}
                   className={`level-pick ${selectedLevel === l.level ? 'active' : ''}`}
                   onClick={() => selectLevel(l.level)}
                 >
-                  <span className="lp-num">Lvl {l.level}</span>
-                  <span className="lp-count">{l.level * 50} words</span>
+                  {l.level}
                 </button>
               ))}
             </div>
             <button className="ghost download-words" onClick={downloadWordList}>
-              Download Level {selectedLevel} words for ChatGPT
+              ↓ Download Level {selectedLevel} words for ChatGPT
             </button>
           </div>
 
@@ -388,84 +387,53 @@ ${list}
           </div>
         </div>
 
-        {!gameOver && (
-          <div className="scores">
-            <p className="best-line">
-              <span>Your best <b>{myScoreFor(currentMode, selectedLevel) || 0}</b></span>
-              {globalBest && (
-                <span>Global <b>{globalBest.score}</b>{globalBest.name ? ` (${globalBest.name})` : ''}</span>
-              )}
-            </p>
-            <button
-              className="ghost scores-toggle"
-              onClick={() => setShowScores((s) => !s)}
-              aria-expanded={showScores}
-            >
-              {showScores ? '▾' : '▸'} High scores
-            </button>
-            {showScores && (
-              <div className="leaderboards">
+        <div className="scores">
+          <p className="best-line">
+            <span>Your best <b>{myScoreFor(currentMode, selectedLevel) || 0}</b></span>
+            {globalBest && (
+              <span>Global <b>{globalBest.score}</b>{globalBest.name ? ` (${globalBest.name})` : ''}</span>
+            )}
+          </p>
+          <button
+            className="ghost scores-toggle"
+            onClick={() => setShowScores((s) => !s)}
+            aria-expanded={showScores}
+          >
+            {showScores ? '▾' : '▸'} High scores
+          </button>
+          {showScores && (
+            <div className="leaderboards">
+              <div className="leaderboard">
+                <h3>My high scores</h3>
+                <LeaderTable
+                  levels={levels}
+                  selectedLevel={selectedLevel}
+                  cell={(mode, level) => myScoreFor(mode, level) || '—'}
+                />
+              </div>
+              {allScores && (
                 <div className="leaderboard">
-                  <h3>My high scores</h3>
+                  <h3>Global high scores</h3>
                   <LeaderTable
                     levels={levels}
                     selectedLevel={selectedLevel}
-                    cell={(mode, level) => myScoreFor(mode, level) || '—'}
+                    cell={(mode, level) => {
+                      const r = scoreFor(mode, level)
+                      return r ? <>{r.score}{r.name ? <span className="lb-name"> {r.name}</span> : ''}</> : '—'
+                    }}
                   />
                 </div>
-                {allScores && (
-                  <div className="leaderboard">
-                    <h3>Global high scores</h3>
-                    <LeaderTable
-                      levels={levels}
-                      selectedLevel={selectedLevel}
-                      cell={(mode, level) => {
-                        const r = scoreFor(mode, level)
-                        return r ? <>{r.score}{r.name ? <span className="lb-name"> {r.name}</span> : ''}</> : '—'
-                      }}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {gameOver && wrongCards.length > 0 && (
-          <div className="wrong-review">
-            <h3>Words to review ({wrongCards.length})</h3>
-            <div className="wrong-list">
-              {wrongCards.map((c) => (
-                <div className="wrong-item" key={c.id}>
-                  <span className="w-term">{c.term}</span>
-                  <span className="w-trans">{c.translation}</span>
-                  <SpeakButton card={c} />
-                </div>
-              ))}
+              )}
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
-        {import.meta.env.DEV && (
-          <div className="dev-tools">
-            <button className="ghost" disabled={audioBusy} onClick={generateAudio}>
-              {audioBusy
-                ? `Generating audio… ${audioProgress?.done ?? 0}/${audioProgress?.total ?? 0}`
-                : 'Generate missing audio (whole deck)'}
-            </button>
-            {audioMsg && <span className="dev-note">{audioMsg}</span>}
-          </div>
-        )}
+        <GenerateAudioButton cards={allCards} label="whole deck" />
 
         <div className="intro-actions">
           <button className="primary wide" onClick={start}>
-            {gameOver ? `↻ Play Level ${selectedLevel}` : `▶ Start Level ${selectedLevel}`}
+            ▶ Start Level {selectedLevel}
           </button>
-          {gameOver && wrongCards.length > 0 && onStudyWrong && (
-            <button className="wide" onClick={() => onStudyWrong(wrongCards)}>
-              Study these words
-            </button>
-          )}
           <button className="wide" onClick={onExit}>Back to dashboard</button>
         </div>
       </div>
@@ -502,7 +470,7 @@ ${list}
             className={`fall-word ${wordState} ${audioMode ? 'audio' : ''}`}
             style={{ top: `${pos}%` }}
           >
-            {audioMode ? '🔊' : round.card.term}
+            {audioMode ? '🔊' : round.card.pinyin}
           </div>
         )}
         {pops.map((p) => (

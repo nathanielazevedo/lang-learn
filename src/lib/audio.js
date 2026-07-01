@@ -18,7 +18,7 @@ export function playWord(card) {
   const fallback = () => {
     if (settled) return
     settled = true
-    speak(card.hanzi || card.term, 'zh-CN')
+    speak(card.hanzi || card.pinyin, 'zh-CN')
   }
   audio.onerror = fallback
   audio.play().then(() => { settled = true }).catch(fallback)
@@ -41,7 +41,7 @@ export function playWordThen(card, onDone) {
     if (settled) return
     settled = true
     if (current === audio) current = null
-    speakThen(card.hanzi || card.term, 'zh-CN', onDone)
+    speakThen(card.hanzi || card.pinyin, 'zh-CN', onDone)
   }
   audio.onended = done
   audio.onerror = fallback
@@ -63,7 +63,7 @@ export async function regenerateAudio(card, { skipIfExists = false } = {}) {
   const res = await fetch('/__regen-audio', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id: card.id, text: card.hanzi || card.term, skipIfExists }),
+    body: JSON.stringify({ id: card.id, text: card.hanzi || card.pinyin, skipIfExists }),
   })
   if (!res.ok) {
     const data = await res.json().catch(() => ({}))

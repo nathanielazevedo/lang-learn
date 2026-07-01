@@ -125,6 +125,7 @@ export default function App() {
         {view.name === 'falling' && (
           <FallingView
             levels={levels}
+            grade={grade}
             onExit={() => setView({ name: 'dashboard' })}
             onStudyWrong={(cards) => setView({ name: 'studywrong', cards })}
           />

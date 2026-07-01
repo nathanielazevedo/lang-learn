@@ -14,8 +14,8 @@ function shuffle(arr) {
 // and which side you pick: pinyin-first => show pinyin, pick English; and vice versa.
 function buildQuiz(pool, direction) {
   const pinyinFirst = direction === 'pinyin-first'
-  const promptField = pinyinFirst ? 'term' : 'translation'
-  const answerField = pinyinFirst ? 'translation' : 'term'
+  const promptField = pinyinFirst ? 'pinyin' : 'english'
+  const answerField = pinyinFirst ? 'english' : 'pinyin'
 
   const cards = shuffle(pool).slice(0, 10)
   return cards.map((card) => {
@@ -24,7 +24,7 @@ function buildQuiz(pool, direction) {
       .map((c) => c[answerField])
     return {
       id: card.id,
-      term: card.term,
+      pinyin: card.pinyin,
       hanzi: card.hanzi,
       prompt: card[promptField],
       answer: card[answerField],

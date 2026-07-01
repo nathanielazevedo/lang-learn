@@ -46,7 +46,7 @@ export default function ListenView({ cards, label, sessionKey, direction, delay,
     // The Chinese side uses the generated pronunciation file (with TTS fallback);
     // the English side uses browser speech. Which is front depends on direction.
     const playChinese = (cb) => playWordThen(card, cb)
-    const playEnglish = (cb) => speakThen(card.translation, 'en-US', cb)
+    const playEnglish = (cb) => speakThen(card.english, 'en-US', cb)
     const playFront = pinyinFirst ? playChinese : playEnglish
     const playBack = pinyinFirst ? playEnglish : playChinese
 
@@ -97,8 +97,8 @@ export default function ListenView({ cards, label, sessionKey, direction, delay,
   }
 
   const card = queue[index]
-  const frontText = pinyinFirst ? card.term : card.translation
-  const backText = pinyinFirst ? card.translation : card.term
+  const frontText = pinyinFirst ? card.pinyin : card.english
+  const backText = pinyinFirst ? card.english : card.pinyin
   const frontCls = pinyinFirst ? 'term' : 'translation'
   const backCls = pinyinFirst ? 'translation' : 'term'
   const revealBack = phase === 'back' || phase === 'done'

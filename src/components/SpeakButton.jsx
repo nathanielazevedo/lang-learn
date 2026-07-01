@@ -11,7 +11,7 @@ export default function SpeakButton({ card, size = '' }) {
         e.stopPropagation()
         playWord(card)
       }}
-      aria-label={`Play pronunciation of ${card.term}`}
+      aria-label={`Play pronunciation of ${card.pinyin}`}
       title="Play pronunciation"
     >
       🔊

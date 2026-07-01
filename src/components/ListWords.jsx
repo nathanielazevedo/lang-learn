@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { bucketOf, BUCKET_LABELS } from '../lib/srs.js'
 import { regenerateAudio, playFresh } from '../lib/audio.js'
+import { downloadWordsForChatGPT } from '../lib/wordexport.js'
 import SpeakButton from './SpeakButton.jsx'
+import GenerateAudioButton from './GenerateAudioButton.jsx'
 
 const canRegen = import.meta.env.DEV // dev-server only
 
@@ -17,7 +19,7 @@ export default function ListWords({ cards, label, progress, onExit }) {
       await regenerateAudio(card)
       playFresh(card) // hear the new version
     } catch (e) {
-      setError(`${card.term}: ${e.message}`)
+      setError(`${card.pinyin}: ${e.message}`)
     } finally {
       setBusyId(null)
     }
@@ -30,6 +32,12 @@ export default function ListWords({ cards, label, progress, onExit }) {
         <span className="muted">{label} · {cards.length} words</span>
       </div>
 
+      <button className="ghost download-words" onClick={() => downloadWordsForChatGPT(cards, label)}>
+        ↓ Download {label} words for ChatGPT
+      </button>
+
+      <GenerateAudioButton cards={cards} label={label} />
+
       {error && <div className="regen-error">⚠️ {error}</div>}
 
       <div className="word-list">
@@ -38,15 +46,15 @@ export default function ListWords({ cards, label, progress, onExit }) {
           return (
             <div className="word-row" key={card.id}>
               <span className={`mastery-dot ${b}`} title={BUCKET_LABELS[b]} />
-              <span className="word-term">{card.term}</span>
-              <span className="word-trans">{card.translation}</span>
+              <span className="word-term">{card.pinyin}</span>
+              <span className="word-trans">{card.english}</span>
               {canRegen && (
                 <button
                   className="regen-btn"
                   onClick={() => regen(card)}
                   disabled={busyId === card.id}
                   title="Regenerate audio"
-                  aria-label={`Regenerate audio for ${card.term}`}
+                  aria-label={`Regenerate audio for ${card.pinyin}`}
                 >
                   {busyId === card.id ? '…' : '♻️'}
                 </button>

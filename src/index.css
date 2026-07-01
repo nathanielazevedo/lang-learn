@@ -356,10 +356,12 @@ section h2 { font-size: 1.2rem; margin-bottom: 14px; }
   border-radius: var(--radius);
   padding: 14px;
 }
-.setup-group { display: flex; flex-direction: column; gap: 6px; }
+.setup-group { display: flex; flex-direction: column; gap: 8px; }
+.setup-head { display: flex; align-items: baseline; justify-content: space-between; }
 .setup-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); }
+.setup-meta { font-size: 0.78rem; font-weight: 600; color: var(--accent-2); font-variant-numeric: tabular-nums; }
 .setup-hint { font-size: 0.78rem; color: var(--muted); }
-.download-words { align-self: flex-start; font-size: 0.8rem; color: var(--accent-2); padding: 4px 0; min-height: 0; }
+.download-words { align-self: flex-start; font-size: 0.8rem; color: var(--accent-2); padding: 2px 0; min-height: 0; }
 .download-words:hover { text-decoration: underline; }
 .dev-tools {
   width: 100%; max-width: 440px; margin: 0 auto;
@@ -381,21 +383,31 @@ section h2 { font-size: 1.2rem; margin-bottom: 14px; }
 }
 .mode-seg button.active { background: var(--accent); color: #fff; }
 
-.level-choose { display: flex; gap: 8px; }
+.level-choose { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
 .level-pick {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 12px 8px;
+  min-height: 0;
+  padding: 14px 0;
+  display: grid;
+  place-items: center;
   border: 2px solid transparent;
+  border-radius: 12px;
   background: var(--surface-2);
+  color: var(--text);
+  font-weight: 800;
+  font-size: 1.2rem;
+  font-variant-numeric: tabular-nums;
+  transition: transform 0.08s ease, background 0.15s ease, border-color 0.15s ease;
 }
-.level-pick.active { border-color: var(--accent-2); background: #1f3a33; }
-.lp-num { font-weight: 800; font-size: 1.05rem; }
-.lp-count { font-size: 0.78rem; color: var(--muted); }
+@media (hover: hover) {
+  .level-pick:hover { background: #2a2f4a; }
+}
+.level-pick:active { transform: scale(0.95); }
+.level-pick.active {
+  border-color: var(--accent-2);
+  background: #1f3a33;
+  color: #fff;
+  box-shadow: 0 0 0 1px var(--accent-2) inset;
+}
 .fall-word.audio { font-size: 2rem; padding: 12px 22px; }
 
 /* New global high score entry */

@@ -1,7 +1,7 @@
 export default function Flashcard({ card, flipped, onFlip, direction = 'pinyin-first' }) {
   const pinyinFirst = direction === 'pinyin-first'
-  const frontText = pinyinFirst ? card.term : card.translation
-  const backText = pinyinFirst ? card.translation : card.term
+  const frontText = pinyinFirst ? card.pinyin : card.english
+  const backText = pinyinFirst ? card.english : card.pinyin
   const frontCls = pinyinFirst ? 'term' : 'translation'
   const backCls = pinyinFirst ? 'translation' : 'term'
 
