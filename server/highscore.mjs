@@ -1,7 +1,7 @@
 // Shared global high-score store backed by Supabase (Postgres via PostgREST).
 // A separate record is kept per game mode + level (the "scope").
 // Used by both the Vercel function (api/highscore.js) and the Vite dev middleware.
-const MODES = new Set(['word', 'audio'])
+const MODES = new Set(['word', 'audio', 'build'])
 
 // Build a safe storage scope from a mode + level, or null if invalid.
 export function makeScope(mode, level) {

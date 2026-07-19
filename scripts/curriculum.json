@@ -1,0 +1,105 @@
+{
+  "_comment": [
+    "The sentence-first curriculum. Each level introduces one grammar pattern; its",
+    "vocabulary is derived from the sentences generated for it, not authored here.",
+    "`required` lists words the pattern cannot be taught without — the generator is",
+    "told to exercise them. `additions` are words the corpus lacks entirely; they are",
+    "the ONLY vocabulary the model may use beyond the existing 500 words, and each",
+    "gets a fresh UUID on first use (and an mp3 from `npm run audio`).",
+    "Levels are cumulative: a level-N sentence may use any word from levels 1..N."
+  ],
+
+  "additions": [
+    { "hanzi": "叫", "pinyin": "jiào", "english": "to be called / to call" },
+    { "hanzi": "请", "pinyin": "qǐng", "english": "please / to invite" },
+    { "hanzi": "她", "pinyin": "tā", "english": "she / her" },
+    { "hanzi": "里", "pinyin": "lǐ", "english": "inside / in" },
+    { "hanzi": "岁", "pinyin": "suì", "english": "years old" },
+    { "hanzi": "快", "pinyin": "kuài", "english": "fast / quick" },
+    { "hanzi": "便宜", "pinyin": "piányi", "english": "cheap / inexpensive" },
+    { "hanzi": "杯", "pinyin": "bēi", "english": "cup / (measure: cups)" }
+  ],
+
+  "levels": [
+    {
+      "level": 1,
+      "name": "是 · Identity",
+      "subtitle": "I am, you are · 不 · 吗",
+      "focus": "The copula 是 and simple description. Teach: `S 是 O` (我是学生), `S 很 ADJ` (他很忙), possessive 的 (我的猫), negation with 不 (我不是老师), yes/no questions with 吗, and the adverbs 也 and 都. Introduce pronouns, a few everyday nouns, and the most common greetings. Keep every sentence 3-6 words.",
+      "required": ["我", "你", "他", "她", "是", "不", "的", "吗", "很", "也", "都", "叫", "这", "那", "谁", "有", "没"],
+      "examples": ["我是学生。", "这不是我的猫。", "他们都很忙。", "你叫什么？"]
+    },
+    {
+      "level": 2,
+      "name": "动词 · Doing things",
+      "subtitle": "Subject-verb-object · 什么",
+      "focus": "Basic transitive sentences. Teach: `S V O` (我喝茶), negation of verbs with 不 (他不看书), the question word 什么 sitting in the object slot (你想吃什么？), and 喜欢/想/要 followed by a verb. Introduce everyday verbs and the concrete nouns they take as objects.",
+      "required": ["吃", "喝", "喜欢", "看", "说", "想", "要", "买", "做", "什么", "书", "水", "茶", "饭"],
+      "examples": ["我喜欢喝茶。", "你想吃什么？", "他不看书。"]
+    },
+    {
+      "level": 3,
+      "name": "时间 · Time & completion",
+      "subtitle": "When things happen · 了",
+      "focus": "Time expressions and completed actions. Teach: time-when phrases BEFORE the verb (我今天买书 — never 我买书今天), the aspect particle 了 for completed actions (他昨天来了), numbers and counting, telling time, and days/dates. Introduce numbers, time nouns, and measure words.",
+      "required": ["了", "今天", "明天", "昨天", "现在", "点", "年", "月", "天", "几", "岁", "个", "一", "二", "三"],
+      "examples": ["我今天买了两本书。", "你几点吃晚饭？", "他昨天来了。"]
+    },
+    {
+      "level": 4,
+      "name": "在 · Places & movement",
+      "subtitle": "Where things are · 从…到…",
+      "focus": "Location and motion. Teach: `S 在 PLACE V` with the location before the verb (我在家里吃饭), existential 在 (书在桌子上), the frame 从…到… (从学校到家), localizers 里/上/下, and directional verbs 去/来/回/进/出. Introduce places, furniture, and vehicles.",
+      "required": ["在", "从", "到", "里", "上", "下", "去", "来", "回", "坐", "走", "家", "学校"],
+      "examples": ["我在家里吃饭。", "书在桌子上。", "他从学校走到公园。"]
+    },
+    {
+      "level": 5,
+      "name": "想 · Wanting & asking",
+      "subtitle": "Modals · requests · 吧",
+      "focus": "Modal verbs and making requests. Teach: modal + verb (我想学中文, 你可以帮我吗), the difference between 想 (would like) and 要 (want/will), 会 vs 能 vs 可以, negation 不能/不可以, suggestions with 吧 (我们一起去吧), softened questions with 呢, and prohibition with 别. Introduce activity verbs.",
+      "required": ["想", "要", "会", "能", "可以", "应该", "吧", "呢", "别", "请", "帮", "一起"],
+      "examples": ["你可以帮我吗？", "我们一起去吧。", "我想学中文。"]
+    },
+    {
+      "level": 6,
+      "name": "比 · Describing & comparing",
+      "subtitle": "A 比 B · degree adverbs",
+      "focus": "Adjectives and comparison. Teach: `A 比 B ADJ` (中文比英文难), `A 跟 B 一样 ADJ`, degree adverbs 很/太/非常/最/更/比较, and 的 linking an adjective to a noun (漂亮的房子). Introduce adjectives, colors, and body parts.",
+      "required": ["比", "一样", "最", "更", "非常", "太", "贵", "便宜", "快", "慢", "大", "小", "多", "少"],
+      "examples": ["中文比英文难。", "这个比那个便宜。", "她的眼睛很漂亮。"]
+    },
+    {
+      "level": 7,
+      "name": "过 · Experience & habit",
+      "subtitle": "过 · 着 · 已经 · 常常",
+      "focus": "Aspect and frequency. Teach: 过 for past experience (我去过中国), 着 for ongoing state, 在 for progressive action, and the adverbs 已经/还/就/才/再/又 in their correct pre-verb position. Add frequency adverbs 常常/总是/一直. Contrast 了 (completed) with 过 (ever experienced).",
+      "required": ["过", "着", "已经", "还", "就", "才", "再", "又", "常常", "总是", "一直", "以前", "以后"],
+      "examples": ["我已经吃过了。", "他常常去中国。", "我还没做完。"]
+    },
+    {
+      "level": 8,
+      "name": "因为 · Joining ideas",
+      "subtitle": "因为…所以 · 如果…就",
+      "focus": "Multi-clause sentences. Teach the paired connectives that Mandarin uses in BOTH halves: 因为…所以…, 虽然…但是…, 如果…就…. Also 或者 vs 还是, 而且, 不过, 为了, 除了. Sentences here are longer (6-9 words) and express reasons, conditions, and contrasts.",
+      "required": ["因为", "所以", "虽然", "但是", "如果", "或者", "还是", "而且", "不过", "为了"],
+      "examples": ["因为我很忙，所以不能去。", "如果你想学，就每天练习。"]
+    },
+    {
+      "level": 9,
+      "name": "把 · People & feelings",
+      "subtitle": "把 · 被 · family · emotions",
+      "focus": "The disposal and passive constructions, plus people. Teach: `S 把 O V了` moving the object before the verb (我把书给了他), the passive with 被 (书被他拿走了), and the coverbs 对/向/往/给 marking a target. Introduce family members, occupations, and emotion words.",
+      "required": ["把", "被", "对", "向", "给", "让", "妈妈", "爸爸", "孩子", "自己", "大家"],
+      "examples": ["我把书给了他。", "妹妹被妈妈叫回家了。", "他对我很好。"]
+    },
+    {
+      "level": 10,
+      "name": "社会 · Ideas & society",
+      "subtitle": "Abstract topics · formal register",
+      "focus": "Abstract and written-register Mandarin. Teach: 的 nominalizing a whole phrase (社会的发展), topic-comment sentences, and 对…来说 / 关于 framing. Topics are work, education, economy, environment, and technology. Sentences are longer and more formal, but must still be built from the cumulative pool.",
+      "required": ["文化", "社会", "发展", "教育", "经济", "环境", "影响", "关系", "问题", "重要"],
+      "examples": ["教育对社会的发展很重要。", "这个问题很复杂。"]
+    }
+  ]
+}

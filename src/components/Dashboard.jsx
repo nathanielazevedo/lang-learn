@@ -1,3 +1,5 @@
+import { sentencesForLevel } from "../data/sentences.js";
+
 function levelStats(level, progress) {
   let mastered = 0;
   for (const card of level.cards) {
@@ -13,9 +15,11 @@ export default function Dashboard({
   onStudy,
   onQuiz,
   onType,
+  onBuild,
   onStudyBucket,
   onListen,
   onFalling,
+  onRush,
   onList,
 }) {
   return (
@@ -49,6 +53,9 @@ export default function Dashboard({
           <button className="mode-btn game-mode" onClick={onFalling}>
             Falling Words
           </button>
+          <button className="mode-btn game-mode" onClick={onRush}>
+            Sentence Rush
+          </button>
         </div>
       </section>
 
@@ -58,6 +65,7 @@ export default function Dashboard({
           {levels.map((level) => {
             const s = levelStats(level, progress);
             const pct = Math.round((s.mastered / s.total) * 100);
+            const buildable = sentencesForLevel(level.level).length > 0;
             return (
               <article className="deck-card" key={level.id}>
                 <div className="deck-head">
@@ -77,6 +85,15 @@ export default function Dashboard({
                   </button>
                   <button onClick={() => onQuiz(level.id)}>Quiz</button>
                   <button onClick={() => onType(level.id)}>Type</button>
+                  <button
+                    onClick={() => onBuild(level.id)}
+                    disabled={!buildable}
+                    title={
+                      buildable ? "Build sentences" : "No sentences for this level yet"
+                    }
+                  >
+                    Build
+                  </button>
                   <button onClick={() => onListen(level.id)}>Listen</button>
                   <button onClick={() => onList(level.id)}>List</button>
                 </div>

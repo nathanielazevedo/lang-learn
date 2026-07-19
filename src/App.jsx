@@ -1,19 +1,24 @@
 import { useMemo, useState } from 'react'
-import { levels, allCards, getLevel } from './data/levels.js'
+import { levels, allCards, getLevel, cardsUpToLevel } from './data/levels.js'
+import { sentencesForLevel } from './data/sentences.js'
 import { useProgress } from './hooks/useProgress.js'
+import { useSentenceProgress } from './hooks/useSentenceProgress.js'
 import { useSettings } from './hooks/useSettings.js'
 import { bucketOf, BUCKET_LABELS } from './lib/srs.js'
 import Dashboard from './components/Dashboard.jsx'
 import StudyView from './components/StudyView.jsx'
 import QuizView from './components/QuizView.jsx'
 import TypingView from './components/TypingView.jsx'
+import SentenceView from './components/SentenceView.jsx'
 import ListenView from './components/ListenView.jsx'
 import ListWords from './components/ListWords.jsx'
 import FallingView from './components/FallingView.jsx'
+import SentenceRushView from './components/SentenceRushView.jsx'
 import Settings from './components/Settings.jsx'
 
 export default function App() {
   const { progress, grade, reset } = useProgress()
+  const { gradeSentence } = useSentenceProgress()
   const { settings, update } = useSettings()
   const [view, setView] = useState({ name: 'dashboard' })
   const immersive = view.name === 'falling' // full-screen, no footer/scroll
@@ -57,9 +62,11 @@ export default function App() {
             onStudy={(levelId) => setView({ name: 'study', levelId })}
             onQuiz={(levelId) => setView({ name: 'quiz', levelId })}
             onType={(levelId) => setView({ name: 'typing', levelId })}
+            onBuild={(levelId) => setView({ name: 'sentence', levelId })}
             onStudyBucket={(bucket) => setView({ name: 'studyset', bucket })}
             onListen={(levelId) => setView({ name: 'listen', levelId })}
             onFalling={() => setView({ name: 'falling' })}
+            onRush={() => setView({ name: 'rush' })}
             onList={(levelId) => setView({ name: 'list', levelId })}
           />
         )}
@@ -111,6 +118,17 @@ export default function App() {
           />
         )}
 
+        {view.name === 'sentence' && (
+          <SentenceView
+            sentences={sentencesForLevel(getLevel(view.levelId).level)}
+            pool={cardsUpToLevel(getLevel(view.levelId).level)}
+            label={getLevel(view.levelId).name}
+            sessionKey={view.levelId}
+            gradeSentence={gradeSentence}
+            onExit={() => setView({ name: 'dashboard' })}
+          />
+        )}
+
         {view.name === 'listen' && (
           <ListenView
             cards={view.all ? allCards : getLevel(view.levelId).cards}
@@ -130,6 +148,10 @@ export default function App() {
             onExit={() => setView({ name: 'dashboard' })}
             onStudyWrong={(cards) => setView({ name: 'studywrong', cards })}
           />
+        )}
+
+        {view.name === 'rush' && (
+          <SentenceRushView levels={levels} onExit={() => setView({ name: 'dashboard' })} />
         )}
 
         {view.name === 'studywrong' && (

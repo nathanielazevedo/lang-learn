@@ -48,6 +48,7 @@ h1 { letter-spacing: -0.02em; }
    reads thinner, not bolder, so weight carries the emphasis instead of the face. */
 .option,
 .fall-option,
+.tile,
 .grade,
 .mode-btn,
 .level-pick,
@@ -655,6 +656,63 @@ section h2::after {
 .option:disabled { cursor: default; }
 .option.correct { background: #e3f2ea; border-color: var(--accent-2); }
 .option.wrong { background: #fbeae7; border-color: var(--danger); }
+
+/* Sentence builder: tap tiles from the bank up into the slots. */
+.tile-slots {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 8px;
+  min-height: 76px;
+  padding: 12px 4px;
+  margin-bottom: 22px;
+  border-bottom: 2px dashed var(--line-strong);
+}
+.tile-bank { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 20px; }
+.tile {
+  padding: 8px 14px;
+  min-height: 0;
+  font-size: 1.3rem;
+  line-height: 1.25;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+}
+.tile .tile-pinyin { display: block; font-size: 0.68rem; font-weight: 500; opacity: 0.6; }
+/* Placed tiles keep their slot in the bank rather than being removed — otherwise
+   the bank reflows on every tap and the next tap lands on the wrong tile. */
+.tile.ghosted { visibility: hidden; }
+
+/* Sentence Rush: the per-sentence countdown. */
+.rush-timer {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+.rush-timer-fill {
+  height: 100%;
+  background: var(--accent-2);
+  border-radius: 999px;
+  transition: background-color 0.2s;
+}
+.rush-timer-fill.warn { background: #e08a1e; }
+.rush-timer-fill.danger { background: var(--danger); }
+.session.rush.correct .rush-timer-fill { background: var(--accent-2); }
+.session.rush.wrong { animation: rush-shake 0.24s; }
+@keyframes rush-shake {
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+/* "Not quite" — full but wrong. Deliberately softer than the life-lost shake,
+   because nothing was actually lost. */
+.session.rush.nudge .tile-slots { animation: rush-nudge 0.22s; }
+@keyframes rush-nudge {
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+.rush-reveal { margin-top: 12px; }
+.wrong-item.rush-missed .w-term { font-size: 1.1rem; }
 
 /* 印章 seal-stamp score: red square, carved edge, conic fill for the score. */
 .score-ring {
