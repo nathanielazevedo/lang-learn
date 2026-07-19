@@ -28,8 +28,9 @@ export default function App() {
     <div className="app">
       <header className="topbar">
         <button className="brand" onClick={() => setView({ name: 'dashboard' })}>
+          <span className="brand-seal" aria-hidden="true">汉</span>
           <span className="brand-name">LangLearn</span>
-          <span className="brand-sub">Mandarin · Pinyin</span>
+          <span className="brand-sub">汉语 · Mandarin Pinyin</span>
         </button>
         <nav>
           <button
