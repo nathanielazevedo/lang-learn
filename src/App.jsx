@@ -171,6 +171,7 @@ export default function App() {
           <ListWords
             cards={getLevel(view.levelId).cards}
             label={getLevel(view.levelId).name}
+            sentences={sentencesForLevel(getLevel(view.levelId).level)}
             progress={progress}
             onExit={() => setView({ name: 'dashboard' })}
           />

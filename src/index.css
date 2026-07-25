@@ -374,6 +374,14 @@ section h2::after {
 }
 .word-term { font-weight: 800; font-size: 1.05rem; }
 .word-trans { color: var(--muted); flex: 1; min-width: 0; }
+
+/* Sentence rows in the list view: hanzi on top, pinyin + gloss beneath. */
+.list-subhead { margin: 22px 0 10px; }
+.sentence-row { align-items: flex-start; }
+.sentence-text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.sentence-hanzi { font-weight: 800; font-size: 1.15rem; }
+.sentence-pinyin { color: var(--muted); font-size: 0.85rem; }
+.sentence-row .word-trans { flex: none; }
 .mastery-dot {
   width: 10px;
   height: 10px;

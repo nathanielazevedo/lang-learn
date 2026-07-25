@@ -1,14 +1,16 @@
 import { useState } from 'react'
 import { bucketOf, BUCKET_LABELS } from '../lib/srs.js'
 import { regenerateAudio, playFresh } from '../lib/audio.js'
+import { speak } from '../lib/speech.js'
 import { downloadWordsForChatGPT } from '../lib/wordexport.js'
 import SpeakButton from './SpeakButton.jsx'
 import GenerateAudioButton from './GenerateAudioButton.jsx'
 
 const canRegen = import.meta.env.DEV // dev-server only
 
-// A plain reference list of every word in a level.
-export default function ListWords({ cards, label, progress, onExit }) {
+// A plain reference list of every word in a level, plus the sentences you can
+// build from it.
+export default function ListWords({ cards, label, sentences = [], progress, onExit }) {
   const [busyId, setBusyId] = useState(null)
   const [error, setError] = useState(null)
 
@@ -64,6 +66,32 @@ export default function ListWords({ cards, label, progress, onExit }) {
           )
         })}
       </div>
+
+      {sentences.length > 0 && (
+        <>
+          <h3 className="list-subhead">Sentences · {sentences.length}</h3>
+          <div className="word-list">
+            {sentences.map((s) => (
+              <div className="word-row sentence-row" key={s.id}>
+                <div className="sentence-text">
+                  <span className="sentence-hanzi">{s.hanzi}</span>
+                  <span className="sentence-pinyin">{s.pinyin}</span>
+                  <span className="word-trans">{s.english}</span>
+                </div>
+                <button
+                  type="button"
+                  className="speak-btn"
+                  onClick={() => speak(s.hanzi, 'zh-CN')}
+                  aria-label={`Play ${s.pinyin}`}
+                  title="Play sentence"
+                >
+                  🔊
+                </button>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   )
 }
